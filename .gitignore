@@ -1,0 +1,25 @@
+# macOS
+.DS_Store
+
+# Xcode
+build/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+*.xcuserdatad/
+
+# XcodeGen output — regenerate locally via `xcodegen generate`
+ComponentsStudio.xcodeproj/
+
+# Swift Package Manager
+.build/
+Packages/
+Package.pins
+Package.resolved
+
+# Signing
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.pem
