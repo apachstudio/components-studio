@@ -19,11 +19,20 @@ struct ComponentStudioView: View {
         NavigationStack {
             List {
                 Section("Chrome · Liquid Glass") {
+                    studioLink(.searchPillRest)
+                }
+                Section("Search · Loading") {
+                    studioLink(.blurFocusLoading)
+                }
+                Section("Cloud") {
+                    studioLink(.bubbleCard)
+                }
+                Section("Deck") {
+                    studioLink(.verticalCardDeck)
+                }
+                Section("Samples") {
                     studioLink(.sampleGlassPill)
                 }
-                // Add more sections as components arrive:
-                // Section("Cards") { … }
-                // Section("Motion") { … }
             }
             .navigationTitle("Components Studio")
             .navigationBarTitleDisplayMode(.inline)
@@ -45,12 +54,14 @@ private struct ComponentStudioStage: View {
     let item: StudioItem
 
     @State private var recordingMode = false
+    @State private var searchText = ""
 
     var body: some View {
         ZStack {
-            Color(.systemBackground).ignoresSafeArea()
-            componentView
-                .padding(Theme.Spacing.xl)
+            Aurora.canvas.ignoresSafeArea()
+            stageContent
+                .frame(maxWidth: item.maxWidth)
+                .padding(.horizontal, item.horizontalPadding)
                 .contentShape(Rectangle())
                 .onTapGesture(count: 3) {
                     withAnimation(.spring(response: 0.42, dampingFraction: 0.82)) {
@@ -65,10 +76,39 @@ private struct ComponentStudioStage: View {
     }
 
     @ViewBuilder
-    private var componentView: some View {
+    private var stageContent: some View {
         switch item {
+        case .searchPillRest:
+            SearchBoxView(text: $searchText, initialFocused: false)
+                .frame(maxWidth: .infinity)
+
+        case .blurFocusLoading:
+            SearchModalView(
+                query: StudioSampleData.blurFocusQuery,
+                onSubmitNewQuery: nil
+            )
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .ignoresSafeArea()
+
+        case .bubbleCard:
+            ExpandingBubbleCard(
+                place: StudioSampleData.pizzaPlace,
+                satellites: StudioSampleData.pizzaIngredients,
+                size: Cloud.bubbleH,
+                rotation: 8
+            )
+
+        case .verticalCardDeck:
+            PlaceDeckView(
+                places: StudioSampleData.deckPlaces,
+                onTapCard: { _, _ in },
+                onTapBackground: {}
+            )
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+
         case .sampleGlassPill:
             SampleGlassPill()
+                .padding(Theme.Spacing.xl)
         }
     }
 
@@ -82,20 +122,44 @@ private struct ComponentStudioStage: View {
 // MARK: - Item registry
 
 enum StudioItem: Hashable {
+    case searchPillRest
+    case blurFocusLoading
+    case bubbleCard
+    case verticalCardDeck
     case sampleGlassPill
 
     var title: String {
         switch self {
+        case .searchPillRest: return "Search pill (rest)"
+        case .blurFocusLoading: return "Blur-focus summary (loading)"
+        case .bubbleCard: return "Bubble card"
+        case .verticalCardDeck: return "Vertical card deck"
         case .sampleGlassPill: return "Sample · glass pill"
+        }
+    }
+
+    var maxWidth: CGFloat? {
+        switch self {
+        case .bubbleCard, .verticalCardDeck, .blurFocusLoading:
+            return .infinity
+        default:
+            return .infinity
+        }
+    }
+
+    var horizontalPadding: CGFloat {
+        switch self {
+        case .bubbleCard, .verticalCardDeck, .blurFocusLoading:
+            return 0
+        case .searchPillRest:
+            return Theme.Spacing.xxl
+        case .sampleGlassPill:
+            return 0
         }
     }
 }
 
 // MARK: - Sample component (placeholder)
-//
-// A bare Liquid Glass pill. The whole point is to have ONE working
-// component in the catalog from day zero so the studio renders something
-// the moment you open it. Replace / delete this when real work begins.
 
 private struct SampleGlassPill: View {
     var body: some View {
