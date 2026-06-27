@@ -15,8 +15,15 @@ struct BubbleView: View {
 
     private var width: CGFloat { size / Cloud.bubbleAspect }
 
+    /// Food bubbles fall back to a fork-and-knife glyph; everything else
+    /// to the generic photo glyph — so a failed load still reads as the
+    /// right kind of content.
+    private var fallbackSymbol: String {
+        place.category.lowercased() == "food" ? "fork.knife" : "photo"
+    }
+
     var body: some View {
-        RemoteImage(url: place.imageURL)
+        RemoteImage(url: place.imageURL, fallbackSymbol: fallbackSymbol)
             .frame(width: width, height: size)
             .clipped()
             .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))

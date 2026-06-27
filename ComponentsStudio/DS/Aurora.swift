@@ -9,6 +9,11 @@ enum Aurora {
     static let canvas = Color(hex: 0xFFFFFF)      // neutral.0
     static let cardInk = Color(hex: 0x10161A)     // photo slot / hero backing
 
+    // Studio redesign tokens (Figma node 103:3914) — flat black-on-white catalog.
+    static let iconInk = Color(hex: 0x1A1A1A)     // back chevron / FAB glyphs
+    static let listArrow = Color(hex: 0x1E1E1E)   // trailing "→" on list rows
+    static let rule = Color(hex: 0x000000)        // 1px table rails + row separators
+
     /// Brand accent. Was `lime` (#CDE34D); replaced with ink @ 80% for a
     /// quieter, more premium tone. Use for interactive accents, badges,
     /// `.tint(_:)`, and any element that previously read as "lime."
@@ -97,6 +102,14 @@ enum AppFont {
         return .custom(name, size: size, relativeTo: style).weight(weight)
     }
 
+    /// SF Pro Display Bold — the studio redesign's single display face
+    /// (Figma node 103:3914). The system serves SF Pro Display for
+    /// `design: .default` at large sizes and SF Pro Text at smaller ones;
+    /// the optical difference is negligible for our weights.
+    static func display(_ size: CGFloat, _ weight: Font.Weight = .bold) -> Font {
+        .system(size: size, weight: weight, design: .default)
+    }
+
     /// Decorative script for hero moments. Falls back through Snell Roundhand
     /// → system serif italic. `relativeTo:` keeps Dynamic Type scaling intact.
     static func script(
@@ -110,6 +123,18 @@ enum AppFont {
             return .custom("SnellRoundhand", size: size, relativeTo: style)
         }
         return .system(style, design: .serif).italic()
+    }
+
+    /// Dripdrop display face for Refractive Text ("apach").
+    static func dripdrop(
+        _ size: CGFloat,
+        relativeTo style: Font.TextStyle = .largeTitle
+    ) -> Font {
+        let postScript = "Dripdrop-Regular"
+        if UIFont(name: postScript, size: size) != nil {
+            return .custom(postScript, size: size, relativeTo: style)
+        }
+        return .system(size: size, weight: .bold, design: .default)
     }
 
     private static func manropeName(_ w: Font.Weight) -> String {

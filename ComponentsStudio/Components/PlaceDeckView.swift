@@ -23,6 +23,12 @@ struct PlaceDeckView: View {
     /// background to dismiss" muscle memory from photo apps.
     var onTapBackground: () -> Void = {}
 
+    /// Live scroll / settle knobs from the Spec Toolbox.
+    var motionSpecs: PlaceDeckSpecs = PlaceDeckSpecs(
+        ComponentSpecState(defaults: StudioItem.verticalCardDeck.specDefaults),
+        sheet: StudioItem.verticalCardDeck.specSheet!
+    )
+
     // MARK: - Tunables (expose every "feel" knob up front)
 
     /// Card aspect ratio (height ÷ width) — matches `SearchResultCard`'s
@@ -31,24 +37,19 @@ struct PlaceDeckView: View {
     /// same object across the two surfaces.
     private let cardAspectRatio: CGFloat    = 1.44
     /// Horizontal margin each card takes from the screen edge — matches
-    /// the result tile's `.padding(.horizontal, 24)` so widths line up.
-    private let cardHorizontalInset: CGFloat = 24
+    /// `StudioLayout.horizontalPadding` so widths line up with other stages.
+    private var cardHorizontalInset: CGFloat { StudioLayout.horizontalPadding }
     private let cardSpacing: CGFloat        = 18
     private let cardCornerRadius: CGFloat   = 36
 
-    /// Scroll-transition feel.
-    private let centerScale: CGFloat        = 1.0
-    private let edgeScale: CGFloat          = 0.84
-    private let centerOpacity: CGFloat      = 1.0
-    /// Drops to 0.3 (was 0.5) so the card is already mostly faded by
-    /// the time it reaches the mask band — no visible "cut" at the
-    /// rounded top corner during scroll.
-    private let edgeOpacity: CGFloat        = 0.3
-    /// Max blur applied at the edges (px). Centre = 0.
-    private let maxEdgeBlur: CGFloat        = 6
-    /// Parallax shift on the inner photo. Subtle Ken-Burns drift so the
-    /// image floats inside its card frame as the deck scrolls.
-    private let parallaxAmount: CGFloat     = 14
+    /// Scroll-transition feel — driven by `motionSpecs` when set from
+    /// Component Studio; defaults match the original tuned values.
+    private var centerScale: CGFloat        { 1.0 }
+    private var edgeScale: CGFloat          { CGFloat(motionSpecs.edgeScale) }
+    private var centerOpacity: CGFloat      { 1.0 }
+    private var edgeOpacity: CGFloat        { CGFloat(motionSpecs.edgeOpacity) }
+    private var maxEdgeBlur: CGFloat        { CGFloat(motionSpecs.maxEdgeBlur) }
+    private var parallaxAmount: CGFloat     { CGFloat(motionSpecs.parallaxAmount) }
 
     /// Shadow morphs from deep+soft at centre to tight at the edges.
     private let centerShadowRadius: CGFloat = 28
@@ -58,8 +59,8 @@ struct PlaceDeckView: View {
     private let shadowColor: Color          = .black.opacity(0.35)
 
     /// Settle "breathe" on each newly-centred card (post-snap).
-    private let settleScale: CGFloat        = 1.012
-    private let settleDuration: Double      = 0.4
+    private var settleScale: CGFloat        { CGFloat(motionSpecs.settleScale) }
+    private var settleDuration: Double      { motionSpecs.settleDuration }
 
     // MARK: - State
 

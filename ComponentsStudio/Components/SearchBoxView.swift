@@ -40,6 +40,12 @@ struct SearchBoxView: View {
     /// Component Studio: open already focused/expanded for screen recording.
     var initialFocused: Bool = false
 
+    /// Live motion / aura knobs from the Spec Toolbox.
+    var motionSpecs: SearchBoxSpecs = SearchBoxSpecs(
+        ComponentSpecState(defaults: StudioItem.searchPillRest.specDefaults),
+        sheet: StudioItem.searchPillRest.specSheet!
+    )
+
     @FocusState private var focused: Bool
     @State private var mode: SearchMode = .ai
     @State private var typed = ""
@@ -85,10 +91,13 @@ struct SearchBoxView: View {
         .simultaneousGesture(
             TapGesture().onEnded { focused = true }
         )
-        .scaleEffect(focused ? 1.012 : 1.0)
+        .scaleEffect(focused ? motionSpecs.focusScale : 1.0)
         // Smooth spring drives container height, bottom-row reveal, opacity,
         // and scale — all in sync when the bar gains/loses focus.
-        .animation(.spring(response: 0.42, dampingFraction: 0.78), value: focused)
+        .animation(
+            .spring(response: motionSpecs.focusResponse, dampingFraction: motionSpecs.focusDamping),
+            value: focused
+        )
         .animation(.spring(response: 0.3, dampingFraction: 0.78), value: mode)
         .task { await runTypewriter() }
         .task { await blinkCaret() }
@@ -292,7 +301,9 @@ struct SearchBoxView: View {
     /// the Liquid Glass surface, never as a tint. Freezes under Reduce Motion.
     private var aiAura: some View {
         TimelineView(.animation) { tl in
-            let period: Double = focused ? 2.2 : 4.2
+            let period: Double = focused
+                ? motionSpecs.auraPeriodFocused
+                : motionSpecs.auraPeriodRest
             let angle = reduceMotion
                 ? 0
                 : tl.date.timeIntervalSinceReferenceDate
@@ -315,7 +326,9 @@ struct SearchBoxView: View {
 
     private var snakeStroke: some View {
         TimelineView(.animation) { tl in
-            let period: Double = focused ? 2.2 : 4.2
+            let period: Double = focused
+                ? motionSpecs.auraPeriodFocused
+                : motionSpecs.auraPeriodRest
             let angle = reduceMotion
                 ? 0
                 : tl.date.timeIntervalSinceReferenceDate
@@ -327,7 +340,7 @@ struct SearchBoxView: View {
                         center: .center,
                         angle: .degrees(angle)
                     ),
-                    lineWidth: focused ? 1.2 : 0.9
+                    lineWidth: focused ? motionSpecs.snakeWidthFocused : motionSpecs.snakeWidthRest
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)

@@ -29,7 +29,7 @@ enum StudioSampleData {
               imageURL: unsplash("1486297678162-eb2a19b0a32d"),
               stays: 0, rating: 0, category: "food"),
         Place(id: "ing-basil", title: "Basil", subtitle: "",
-              imageURL: unsplash("1538595313828-fa6b5b893f06"),
+              imageURL: unsplash("1457530378978-8bac673b8062"),
               stays: 0, rating: 0, category: "food"),
         Place(id: "ing-olive-oil", title: "Olive Oil", subtitle: "",
               imageURL: unsplash("1474979266404-7eaacbcd87c5"),
@@ -79,4 +79,14 @@ enum StudioSampleData {
     }
 
     static let blurFocusQuery = "beach summer vibes for family"
+
+    // MARK: - Shaders
+
+    /// High-contrast portrait on saturated orange — matches Abduzeedo Photo Ripple demo.
+    static let shaderPhotoURL = URL(string: "https://i.pinimg.com/736x/df/17/26/df17268484ce6c16d33ddf6ff73fbad3.jpg")
+
+    /// Colorful, detail-rich wallpaper for the Refractive Photo lens, so the
+    /// refraction / magnification / chromatic fringe read clearly behind the
+    /// draggable glass (Victor Baro tutorial uses a wallpaper-like backdrop).
+    static let wallpaperURL = unsplash("1502082553048-f009c37129b9")
 }

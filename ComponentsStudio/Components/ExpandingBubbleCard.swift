@@ -141,13 +141,17 @@ struct ExpandingBubbleCard: View {
             VStack {
                 Spacer()
                 VStack(spacing: 16) {
-                    MotionControlBar(
-                        preset: $preset,
-                        config: $config,
-                        position: $position,
-                        isExpanded: $controlBarExpanded,
-                        showCode: $showCode
-                    )
+                    if controlBarExpanded || showCode {
+                        MotionControlBar(
+                            preset: $preset,
+                            config: $config,
+                            position: $position,
+                            isExpanded: $controlBarExpanded,
+                            showCode: $showCode,
+                            onCollapse: collapseControlBar
+                        )
+                        .transition(.opacity.combined(with: .move(edge: .bottom)))
+                    }
                     // Customize is now its own FAB sitting next to
                     // the tools FAB on the right edge of the row.
                     // Both FABs share the same compact 20 pt frame
@@ -158,8 +162,8 @@ struct ExpandingBubbleCard: View {
                         toolsFAB
                     }
                 }
-                .padding(.horizontal, 24)
-                .padding(.bottom, 24)
+                .padding(.horizontal, StudioLayout.horizontalPadding)
+                .padding(.bottom, StudioLayout.horizontalPadding)
             }
         }
         // No `.clipped()` — satellites are allowed to bleed off the
@@ -172,7 +176,7 @@ struct ExpandingBubbleCard: View {
     /// view; second tap restores the toolbox to its pre-code-view
     /// state (collapsed / specs panel).
     private var toolsFAB: some View {
-        circleFAB(
+        StudioCircleFAB(
             symbol: "wrench.and.screwdriver.fill",
             isActive: showCode,
             accessibilityLabel: showCode ? "Close generated code" : "Open generated code"
@@ -190,11 +194,9 @@ struct ExpandingBubbleCard: View {
     }
 
     /// Customize FAB — left of the tools FAB. Toggles the specs panel.
-    /// Active state only when the panel is open via THIS button (not
-    /// via the tools FAB).
     private var customizeFAB: some View {
         let isActive = controlBarExpanded && !showCode
-        return circleFAB(
+        return StudioCircleFAB(
             symbol: "slider.horizontal.3",
             isActive: isActive,
             accessibilityLabel: isActive ? "Close customize panel" : "Open customize panel"
@@ -210,45 +212,19 @@ struct ExpandingBubbleCard: View {
         }
     }
 
-    /// Shared FAB primitive — 20 pt glyph in a compact circle. Rest =
-    /// ultra-thin material + 70 % white (matches the selected chip
-    /// pills). Active = ultra-thin material + 85 % black with a white
-    /// glyph (inverted "dark-mode icon" look).
-    private func circleFAB(
-        symbol: String,
-        isActive: Bool,
-        accessibilityLabel: String,
-        action: @escaping () -> Void
-    ) -> some View {
-        Button(action: action) {
-            Image(systemName: symbol)
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(isActive ? Color.white : Aurora.ink)
-                .frame(width: 20, height: 20)
-                .padding(7)
-                .background {
-                    Circle()
-                        .fill(.ultraThinMaterial)
-                        .overlay(Circle().fill(
-                            isActive
-                                ? Color.black.opacity(0.85)
-                                : Color.white.opacity(0.70)
-                        ))
-                }
-                .contentShape(Circle())
-                .shadow(color: .black.opacity(0.12), radius: 6, x: 0, y: 3)
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(accessibilityLabel)
-        .accessibilityAddTraits(isActive ? [.isButton, .isSelected] : .isButton)
-    }
-
     /// Closes the toolbox's code view and restores `controlBarExpanded`
     /// to whatever it was right before the user opened code view.
     private func dismissCodeView() {
         withAnimation(toolboxMorphAnim) {
             showCode = false
             controlBarExpanded = expandedStateBeforeCode
+        }
+    }
+
+    private func collapseControlBar() {
+        withAnimation(toolboxMorphAnim) {
+            showCode = false
+            controlBarExpanded = false
         }
     }
 
@@ -584,6 +560,7 @@ private struct MotionControlBar: View {
     /// jump straight into code view (open + flip showCode together).
     @Binding var isExpanded: Bool
     @Binding var showCode: Bool
+    let onCollapse: () -> Void
 
     enum SpecCategory: String, CaseIterable, Identifiable {
         case position
@@ -621,12 +598,11 @@ private struct MotionControlBar: View {
 
     var body: some View {
         VStack(spacing: 10) {
+            collapseHeader
             chipRow
-            if isExpanded {
-                Divider().opacity(0.18)
-                slidersPanel
-                    .transition(.opacity.combined(with: .move(edge: .bottom)))
-            }
+            Divider().opacity(0.18)
+            slidersPanel
+                .transition(.opacity.combined(with: .move(edge: .bottom)))
         }
         .padding(.horizontal, 12)
         .padding(.top, 12)
@@ -650,10 +626,10 @@ private struct MotionControlBar: View {
 
     // MARK: - Liquid Glass surface helper
     //
-    // Mirrors the search-results nav glass (`SearchModalView.NavButtonGlass`):
-    //   · iOS 26 → `.glassEffect(.clear.interactive(), in: shape)` —
-    //              clearer / more transparent than `.regular`, with
-    //              touch responsiveness baked in.
+    // Matches the `SampleGlassPill` style — `.regular.interactive()`
+    // so the toolbox carries the same fuller Liquid Glass material
+    // as the sample pill, not the thinner `.clear` variant.
+    //   · iOS 26 → `.glassEffect(.regular.interactive(), in: shape)`.
     //   · older  → `.ultraThinMaterial` directly.
     // `tint == 0` → pure glass (toolbox bg). `tint > 0` → white wash
     // overlay (not currently used outside the toolbox bg, but kept
@@ -666,16 +642,33 @@ private struct MotionControlBar: View {
             if tint > 0 {
                 shape
                     .fill(.clear)
-                    .glassEffect(.clear.interactive().tint(.white.opacity(tint)), in: shape)
+                    .glassEffect(.regular.interactive().tint(.white.opacity(tint)), in: shape)
             } else {
                 shape
                     .fill(.clear)
-                    .glassEffect(.clear.interactive(), in: shape)
+                    .glassEffect(.regular.interactive(), in: shape)
             }
         } else {
             shape
                 .fill(.ultraThinMaterial)
                 .overlay(shape.fill(Color.white.opacity(tint)))
+        }
+    }
+
+    // MARK: - Collapse header
+
+    private var collapseHeader: some View {
+        HStack {
+            Spacer()
+            Button(action: onCollapse) {
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(Aurora.ink.opacity(0.45))
+                    .frame(width: 28, height: 20)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Collapse controls")
         }
     }
 

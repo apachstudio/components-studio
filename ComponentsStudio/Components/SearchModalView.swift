@@ -27,14 +27,13 @@ struct SearchModalView: View {
     /// per-word blur→focus (results land at ~1.6s, last word focuses
     /// near ~3s) — so the two transitions feel synced, not sequential.
     private let morphDuration: Double = 0.5      // pill grows into surface
-    private let holdDuration: Double  = 1.9      // wait for the text blur
     private let fadeDuration: Double  = 0.7      // surface dissolves out
 
     /// Top bar — Instagram-style: back chevron, query as the title,
     /// ellipsis menu. Spacing + paddings + title type exposed so the
     /// bar is easy to tune from one place.
     private let headerSpacing: CGFloat            = 12
-    private let headerHorizontalPadding: CGFloat  = 24
+    private var headerHorizontalPadding: CGFloat { StudioLayout.horizontalPadding }
     private let headerVerticalPadding: CGFloat    = 8
     /// Query field — 14pt semibold (compact input chip).
     private let titleFontSize: CGFloat            = 14
@@ -49,8 +48,6 @@ struct SearchModalView: View {
 
     /// Cards reveal — they wait for the summary blur to fully resolve,
     /// then ease in one-by-one with `cardStagger` between them.
-    private let cardStagger: Double         = 0.07
-    private let cardRevealDuration: Double  = 0.5
     /// Tiny extra buffer after the last word of the summary focuses,
     /// before the first card starts revealing.
     private let cardRevealBuffer: Double    = 0.08
@@ -73,9 +70,6 @@ struct SearchModalView: View {
     /// (no placeholder bars anymore), starts blurred + faded and resolves
     /// into focus per-word. `blurRevealDuration` is the duration each word
     /// takes to focus — slower than before so the effect is felt.
-    private let blurAmount: CGFloat           = 9.0
-    private let wordStagger: Double           = 0.05
-    private let blurRevealDuration: Double    = 1.0
 
     /// Colored aura intensity — TRAVADA at the pill's level (matches
     /// SearchBoxView.aiAura.opacity 0.20 focused). The modal does NOT
@@ -97,12 +91,20 @@ struct SearchModalView: View {
     /// the view stays usable from previews / standalone tests.
     let onSubmitNewQuery: ((String) -> Void)?
 
+    /// Live blur / reveal knobs from the Spec Toolbox.
+    var motionSpecs: SearchModalSpecs
+
     init(
         query: String,
-        onSubmitNewQuery: ((String) -> Void)? = nil
+        onSubmitNewQuery: ((String) -> Void)? = nil,
+        motionSpecs: SearchModalSpecs = SearchModalSpecs(
+            ComponentSpecState(defaults: StudioItem.blurFocusLoading.specDefaults),
+            sheet: StudioItem.blurFocusLoading.specSheet!
+        )
     ) {
         self.query = query
         self.onSubmitNewQuery = onSubmitNewQuery
+        self.motionSpecs = motionSpecs
         _editableQuery = State(initialValue: query)
     }
 
@@ -186,8 +188,8 @@ struct SearchModalView: View {
                         // circle. The summary's left edge now lands
                         // exactly on the circle's leading border, not
                         // the chevron glyph centre.
-                        .padding(.leading, 24 + 4)
-                        .padding(.trailing, 24)
+                        .padding(.leading, StudioLayout.horizontalPadding + 4)
+                        .padding(.trailing, StudioLayout.horizontalPadding)
                         .padding(.top, summaryTopPadding)
 
                     VStack(spacing: 12) {
@@ -203,8 +205,8 @@ struct SearchModalView: View {
                             .opacity(cardsVisible ? 1 : 0)
                             .offset(y: cardsVisible ? 0 : 28)
                             .animation(
-                                .easeOut(duration: cardRevealDuration)
-                                    .delay(Double(index) * cardStagger),
+                                .easeOut(duration: motionSpecs.cardRevealDuration)
+                                    .delay(Double(index) * motionSpecs.cardStagger),
                                 value: cardsVisible
                             )
                             .accessibilityElement(children: .combine)
@@ -216,7 +218,7 @@ struct SearchModalView: View {
                     // 24pt inset — app-wide horizontal margin so the
                     // result cards line up with the top bar buttons,
                     // the deck cards, and the summary text above.
-                    .padding(.horizontal, 24)
+                    .padding(.horizontal, StudioLayout.horizontalPadding)
                     .padding(.top, cardsTopPadding)
                 }
                 .padding(.bottom, 72)
@@ -232,7 +234,7 @@ struct SearchModalView: View {
                 // viewport, leaving the bar floating below the gradient
                 // surface peak.
                 topBar
-                    .padding(.top, 60)
+                    .padding(.top, 120)
             }
         }
         .tint(Aurora.accent)
@@ -456,9 +458,9 @@ struct SearchModalView: View {
 
         // Phase 2 — Hold + breathe.
         if reduceMotion {
-            try? await Task.sleep(nanoseconds: UInt64(holdDuration * 1_000_000_000))
+            try? await Task.sleep(nanoseconds: UInt64(motionSpecs.holdDuration * 1_000_000_000))
         } else {
-            let half = holdDuration / 2
+            let half = motionSpecs.holdDuration / 2
             withAnimation(.easeInOut(duration: half)) { introScale = 1.03 }
             try? await Task.sleep(nanoseconds: UInt64(half * 1_000_000_000))
             withAnimation(.easeInOut(duration: half)) { introScale = 1.0 }
@@ -564,9 +566,9 @@ struct SearchModalView: View {
             BlurFocusFlow(
                 words: summaryWords,
                 font: AppFont.manrope(summaryFontSize, .light, relativeTo: .body),
-                blurAmount: blurAmount,
-                wordStagger: wordStagger,
-                blurRevealDuration: blurRevealDuration,
+                blurAmount: CGFloat(motionSpecs.blurAmount),
+                wordStagger: motionSpecs.wordStagger,
+                blurRevealDuration: motionSpecs.blurRevealDuration,
                 startDelay: 0,                  // top bar already up
                 reduceMotion: reduceMotion,
                 keywordIconSize: keywordIconSize
@@ -733,8 +735,8 @@ struct SearchModalView: View {
         // cascade in (each card's own `.animation(...delay(idx*stagger))`
         // handles the per-card timing).
         let wordCount = summaryWords.count
-        let blurEndTime = blurRevealDuration
-            + Double(max(0, wordCount - 1)) * wordStagger
+        let blurEndTime = motionSpecs.blurRevealDuration
+            + Double(max(0, wordCount - 1)) * motionSpecs.wordStagger
             + cardRevealBuffer
         try? await Task.sleep(nanoseconds: UInt64(blurEndTime * 1_000_000_000))
         cardsVisible = true

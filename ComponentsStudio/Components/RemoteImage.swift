@@ -4,7 +4,7 @@ import UIKit
 /// Tiny in-memory image cache shared across bubbles + cards, so the cloud
 /// (which re-renders every frame for breathing) never re-fetches and the hero /
 /// card photos appear instantly once loaded.
-final class ImageCache {
+final class ImageCache: @unchecked Sendable {
     static let shared = ImageCache()
     private let cache = NSCache<NSURL, UIImage>()
 
@@ -14,17 +14,30 @@ final class ImageCache {
 
 @MainActor
 final class ImageLoader: ObservableObject {
-    @Published var image: UIImage?
+    /// Three explicit states so the view can ALWAYS render a non-empty
+    /// visual: a placeholder while loading, the photo on success, and a
+    /// fallback fill (never transparent) when every source fails.
+    enum Phase {
+        case loading
+        case loaded(UIImage)
+        case failed
+    }
+
+    @Published var phase: Phase = .loading
 
     func load(_ url: URL?) async {
-        guard let url else { return }
-        if let cached = ImageCache.shared.image(for: url) {
-            image = cached
+        guard let url else {
+            phase = .failed
             return
         }
+        if let cached = ImageCache.shared.image(for: url) {
+            phase = .loaded(cached)
+            return
+        }
+        phase = .loading
         if let primary = try? await fetchValidImage(from: url) {
             ImageCache.shared.insert(primary, for: url)
-            image = primary
+            phase = .loaded(primary)
             return
         }
         // Primary failed — fall back to a guaranteed-working source so
@@ -36,8 +49,12 @@ final class ImageLoader: ObservableObject {
             // Cache under the ORIGINAL key so the fallback is reused
             // on every subsequent render of this Place.
             ImageCache.shared.insert(img, for: url)
-            image = img
+            phase = .loaded(img)
+            return
         }
+        // Everything failed (offline, both hosts down) — surface the
+        // symbol fallback instead of a blank slot.
+        phase = .failed
     }
 
     /// Fetches `url` and returns the decoded image only when both the
@@ -78,20 +95,52 @@ final class ImageLoader: ObservableObject {
 /// frame; callers still own the shape clip for rounded corners.
 struct RemoteImage: View {
     let url: URL?
+    /// SF Symbol drawn on the failure fill so a broken/offline photo
+    /// reads as an intentional placeholder, not a blank slot. Defaults
+    /// to `photo`; food contexts can pass e.g. `fork.knife`.
+    var fallbackSymbol: String = "photo"
+
     @StateObject private var loader = ImageLoader()
+
+    init(url: URL?, fallbackSymbol: String = "photo") {
+        self.url = url
+        self.fallbackSymbol = fallbackSymbol
+    }
 
     var body: some View {
         Color.clear
             .overlay {
-                if let img = loader.image {
+                switch loader.phase {
+                case .loaded(let img):
                     Image(uiImage: img)
                         .resizable()
                         .scaledToFill()
-                } else {
-                    Aurora.cardInk
+                case .loading:
+                    placeholder(showsProgress: true)
+                case .failed:
+                    placeholder(showsProgress: false)
                 }
             }
             .clipped()
             .task(id: url) { await loader.load(url) }
+    }
+
+    /// A guaranteed-visible fill for the non-success phases. Always the
+    /// `cardInk` photo-slot token plus a centered cue (spinner while
+    /// loading, symbol on failure) so the view is never empty/transparent.
+    @ViewBuilder
+    private func placeholder(showsProgress: Bool) -> some View {
+        ZStack {
+            Aurora.cardInk
+            if showsProgress {
+                ProgressView()
+                    .progressViewStyle(.circular)
+                    .tint(Color.white.opacity(0.7))
+            } else {
+                Image(systemName: fallbackSymbol)
+                    .font(.system(size: 22, weight: .regular))
+                    .foregroundStyle(Color.white.opacity(0.5))
+            }
+        }
     }
 }
