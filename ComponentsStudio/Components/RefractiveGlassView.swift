@@ -29,28 +29,9 @@ struct RefractiveGlassView: View {
                     .init(id: "chromatic", label: "Chroma", kind: .slider(0.0...0.4, format: "%.2f")),
                 ]
             ),
-            ComponentSpecCategory(
-                id: "edge",
-                label: "Edge",
-                controls: [
-                    .init(id: "edgeThickness", label: "Thickness", kind: .slider(2...40, format: "%.0f")),
-                    .init(id: "rimIntensity", label: "Glint", kind: .slider(0.0...2.0, format: "%.2f")),
-                ]
-            ),
-            ComponentSpecCategory(
-                id: "shadow",
-                label: "Shadow",
-                controls: [
-                    .init(id: "shadowStrength", label: "Strength", kind: .slider(0.0...0.5, format: "%.2f")),
-                    .init(id: "shadowBlur", label: "Blur", kind: .slider(10...140, format: "%.0f")),
-                    .init(id: "shadowOffset", label: "Offset", kind: .slider(0...48, format: "%.0f")),
-                ]
-            ),
         ],
         defaults: [
             "refraction": 0.36, "falloff": 15.4, "swirl": 0.86, "glassRadius": 86, "chromatic": 0.00,
-            "edgeThickness": 2, "rimIntensity": 0.00,
-            "shadowStrength": 0.00, "shadowBlur": 10, "shadowOffset": 0,
         ]
     )
 
@@ -217,12 +198,12 @@ private struct RefractiveGlassLensFrame: View {
                     .float(Float(specs.refraction)),
                     .float(Float(max(specs.falloff, 0.01))),
                     .float(Float(specs.swirl)),
-                    .float(Float(specs.edgeThickness)),
+                    .float(0),
                     .float(Float(specs.chromatic)),
-                    .float(Float(specs.rimIntensity)),
-                    .float(Float(specs.shadowStrength)),
-                    .float(Float(specs.shadowBlur)),
-                    .float(Float(specs.shadowOffset)),
+                    .float(0),
+                    .float(0),
+                    .float(0),
+                    .float(0),
                     .float(swirlPhase),
                     .float2(Float(shaderVelocity.x), Float(shaderVelocity.y))
                 ),

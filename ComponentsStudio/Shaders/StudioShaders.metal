@@ -144,59 +144,6 @@ half4 photoRipple2(
     return half4(color, sg.a);
 }
 
-/// Black field with white dot grid and touch-driven fisheye bulge.
-[[ stitchable ]]
-half4 sphericMesh(
-    float2 position,
-    float2 size,
-    float2 pointer,
-    float gridDensity,
-    float bulgeStrength,
-    float dotScale
-) {
-    half3 black = half3(0.0);
-    float aspect = size.x / max(size.y, 1.0);
-
-    float2 uv = position / size;
-    float2 p = pointer / size;
-
-    float2 delta = uv - p;
-    delta.x *= aspect;
-    float dist = length(delta);
-
-    float bulgeRadius = 0.36;
-    float bulge = bulgeStrength * exp(-dist * dist / (bulgeRadius * bulgeRadius));
-    float warp = 1.0 + bulge * 3.4;
-
-    float2 gridPos = p + (delta / warp) / float2(aspect, 1.0);
-    float spacing = 1.0 / gridDensity;
-
-    float alpha = 0.0;
-    float2 baseCell = gridPos / spacing;
-    int2 originCell = int2(floor(baseCell));
-
-    for (int j = -1; j <= 1; j++) {
-        for (int i = -1; i <= 1; i++) {
-            float2 cellId = float2(originCell + int2(i, j));
-            float2 center = (cellId + 0.5) * spacing;
-
-            float2 toDot = gridPos - center;
-            toDot.x *= aspect;
-
-            float2 dotDelta = center - p;
-            dotDelta.x *= aspect;
-            float dotDist = length(dotDelta);
-            float dotBulge = bulgeStrength * exp(-dotDist * dotDist / (bulgeRadius * bulgeRadius));
-            float radius = spacing * 0.17 * (1.0 + dotBulge * dotScale);
-
-            float d = length(toDot);
-            alpha = max(alpha, 1.0 - smoothstep(radius * 0.62, radius, d));
-        }
-    }
-
-    return half4(mix(black, half3(1.0), half(alpha)), 1.0);
-}
-
 /// Refractive Glass — a faithful reproduction of Victor Baro's "Implementing a
 /// Refractive Glass Shader in Metal" tutorial, assembling all four steps the
 /// article walks through into one shader, applied to the whole content via
@@ -320,7 +267,11 @@ half4 refractiveGlass(
 
     // (3) Edge lighting / rim highlight, modulated by a fake upper-left light
     // so the glint wraps the top-left of the lens (glass thickness cue).
-    float edgeDistance = abs(dist - radius);
+    // Angular rim wobble — the bubble edge reads as living liquid in idle motion.
+    float rimAngle = atan2(toCenter.y, toCenter.x);
+    float rimWobble = sin(swirlPhase * 2.15 + rimAngle * 7.0)
+                    + sin(swirlPhase * 3.4 + rimAngle * 11.0) * 0.42;
+    float edgeDistance = abs(dist - radius - rimWobble * 2.8);
     float edgeFade = smoothstep(edgeThickness, 0.0, edgeDistance);
     float2 lightDir = normalize(float2(-0.5, -0.8));
     float rimBias = clamp(dot(normalize(toCenter), lightDir), 0.0, 1.0);
@@ -330,41 +281,78 @@ half4 refractiveGlass(
     return result;
 }
 
-/// Frosted-glass refraction with chromatic split and pointer lens.
+/// Liquid typography — organic edge displacement on text silhouettes.
+/// Samples alpha/luminance gradients to find glyph boundaries, then applies
+/// multi-frequency sine waves along the edge normal and tangent so letterforms
+/// appear to breathe like viscous liquid in idle motion. Applied via
+/// `.layerEffect` on the text layer only.
 [[ stitchable ]]
-half4 glassRefraction(
+half4 liquidTextEdge(
     float2 position,
     SwiftUI::Layer layer,
     float2 size,
-    float2 pointer,
     float time,
-    float lensStrength,
-    float frostAmount,
-    float chromaticSplit
+    float amplitude,
+    float frequency,
+    float edgeWidth,
+    float flowSpeed
 ) {
-    float2 uv = position / size;
-    float2 p = pointer / size;
-    float dist = distance(uv, p);
+    const float sampleDist = 1.8;
 
-    float breathe = sin(time * 1.2) * 0.004;
-    float lens = exp(-dist * dist * 7.0) * (0.028 + breathe) * lensStrength;
-    float2 offset = (uv - p) * lens * size;
+    half4 c = layer.sample(position);
+    half4 l = layer.sample(position + float2(-sampleDist, 0.0));
+    half4 r = layer.sample(position + float2( sampleDist, 0.0));
+    half4 u = layer.sample(position + float2(0.0, -sampleDist));
+    half4 d = layer.sample(position + float2(0.0,  sampleDist));
 
-    half4 r = layer.sample(position + offset * float2(chromaticSplit, 1.0));
-    half4 g = layer.sample(position + offset);
-    half4 b = layer.sample(position + offset * float2(2.0 - chromaticSplit, 1.0));
-    half4 color = half4(r.r, g.g, b.b, g.a);
+    float gradX = r.a - l.a;
+    float gradY = d.a - u.a;
+    float alphaEdge = length(float2(gradX, gradY));
 
-    float frost = exp(-dist * 3.5) * frostAmount;
-    color.rgb = mix(color.rgb, half3(1.0), half(frost));
-    color.rgb = mix(color.rgb, half3(0.98), half(0.08));
-    return color;
+    float lumC = dot(float3(c.rgb), float3(0.299, 0.587, 0.114));
+    float lumL = dot(float3(l.rgb), float3(0.299, 0.587, 0.114));
+    float lumR = dot(float3(r.rgb), float3(0.299, 0.587, 0.114));
+    float lumU = dot(float3(u.rgb), float3(0.299, 0.587, 0.114));
+    float lumD = dot(float3(d.rgb), float3(0.299, 0.587, 0.114));
+    float lumGradX = lumR - lumL;
+    float lumGradY = lumD - lumU;
+    float lumaEdge = length(float2(lumGradX, lumGradY));
+
+    float edgeStrength = max(alphaEdge * 5.5, lumaEdge * 3.2);
+    float edgeMask = smoothstep(0.04, 0.42, edgeStrength);
+    edgeMask *= smoothstep(edgeWidth, 0.0, abs(lumC - 0.5) + abs(c.a - 0.5) * 0.5);
+
+    float2 edgeNormal = normalize(float2(gradX + lumGradX, gradY + lumGradY) + 1e-4);
+    float2 edgeTangent = float2(-edgeNormal.y, edgeNormal.x);
+
+    float t = time * flowSpeed;
+    float spatial = frequency * 0.012;
+    float waveNormal = sin(t + dot(position, float2(spatial, spatial * 0.71)))
+                     + sin(t * 1.41 + dot(position, float2(spatial * 1.35, spatial * 0.58))) * 0.58
+                     + cos(t * 0.76 - position.y * spatial * 1.1 + position.x * spatial * 0.85) * 0.34;
+    float waveTangent = sin(t * 1.18 + position.y * spatial * 1.6)
+                      + cos(t * 0.93 + position.x * spatial * 1.25) * 0.48;
+
+    float2 offset = edgeNormal * waveNormal * amplitude * edgeMask
+                  + edgeTangent * waveTangent * amplitude * 0.42 * edgeMask;
+    offset.y = -offset.y;
+
+    float2 samplePos = clamp(position + offset, float2(0.0), size);
+    half4 result = layer.sample(samplePos);
+
+    float shimmer = pow(edgeMask, 2.1) * (0.45 + 0.55 * sin(t * 2.35 + position.x * 0.04));
+    result.rgb += half3(shimmer * 0.055);
+
+    return result;
 }
 
 /// Interactive dotted background — metal.graphics "Interactive Dotted Background".
-/// A tiled dot grid on black; dots glow, attract, or repel near touch based on
-/// `mode` (0 = glow, 1 = attraction, 2 = repulsion). A 3×3 neighbourhood search
-/// keeps displaced dots from clipping at cell boundaries. Applied via `.colorEffect`.
+/// A tiled dot grid; dots glow, attract, or repel near touch based on `mode`
+/// (0 = glow, 1 = attraction, 2 = repulsion). Palette uniforms tint the
+/// background gradient, dot colors, accent scatter, and touch bloom. A 3×3
+/// neighbourhood search keeps displaced dots from clipping at cell boundaries.
+/// Colors are packed in float4 slots to stay under SwiftUI's stitchable
+/// argument limit. Applied via `.colorEffect`.
 [[ stitchable ]]
 half4 dottedBackground(
     float2 position,
@@ -375,21 +363,63 @@ half4 dottedBackground(
     float intensity,
     float gridDensity,
     float influenceRadius,
-    float maxDisplacement
+    float maxDisplacement,
+    float4 bgColor,
+    float4 bg2Color,
+    float4 dotColor,
+    float4 accentColor,
+    float4 glowColor,
+    float4 spotColor,
+    float4 tuningA,
+    float4 tuningB
 ) {
-    float2 uv = position / size;
+    float glowAmount = tuningA.x;
+    float accentMix = tuningA.y;
+    float dotSizeMin = tuningA.z;
+    float dotSizeMax = tuningA.w;
+    float fisheyeAmount = tuningB.x;
+    float dotShape = tuningB.y;
+    float2 safeSize = max(size, float2(1.0));
+    float aspect = safeSize.y / safeSize.x;
+
+    float2 uv = position / safeSize;
+
+    // Dome fisheye (inverse barrel) — the center bulges toward the
+    // viewer (raised) and the edges fall away. Multiplying `centered`
+    // by `warp` (>= 1, growing toward the corners) pushes edge samples
+    // outward, magnifying the center. The grid is procedural, so uv
+    // outside [0,1] just continues the pattern — no clamp artifacts.
+    if (fisheyeAmount > 0.001) {
+        float2 centered = uv - 0.5;
+        centered.x *= aspect;
+        float r2 = dot(centered, centered);
+        float warp = 1.0 + fisheyeAmount * r2 * 2.6;
+        centered *= warp;
+        centered.x /= aspect;
+        uv = centered + 0.5;
+    }
+
     float cols = gridDensity;
-    float rows = cols * (size.y / size.x);
+    float rows = cols * (safeSize.y / safeSize.x);
     float2 grid = float2(cols, rows);
 
     float2 scaled = uv * grid;
     float2 currentCell = floor(scaled);
 
-    float2 touchUV = touch / size;
-    float aspect = size.y / size.x;
+    float2 touchUV = touch / safeSize;
+
+    float3 bgA = bgColor.rgb;
+    float3 bgB = bg2Color.rgb;
+    float3 dots = dotColor.rgb;
+    float3 accent = accentColor.rgb;
+    float3 glow = glowColor.rgb;
+    float3 spot = spotColor.rgb;
+    float3 background = mix(bgA, bgB, uv.y);
+    float shape = clamp(dotShape, 0.0, 1.0);
 
     float bestBrightness = 0.0;
     float bestDotMask = 0.0;
+    float3 bestDotColor = float3(0.0);
 
     for (int dy = -1; dy <= 1; dy++) {
         for (int dx = -1; dx <= 1; dx++) {
@@ -401,32 +431,53 @@ half4 dottedBackground(
             float2 dir = touchDist > 0.001 ? normalize(awayDir) : float2(0.0);
             float influence = (1.0 - smoothstep(0.0, influenceRadius, touchDist)) * intensity;
 
+            float cellHash = fract(sin(dot(neighbor, float2(12.9898, 78.233))) * 43758.5453);
+            float accentPick = step(0.74, cellHash) * accentMix;
+            float3 baseDot = mix(dots, accent, accentPick);
+
             float2 dotCenter = neighbor + 0.5;
-            float radius = 0.12;
+            float radius = dotSizeMin;
             float brightness = 0.25;
 
             if (mode < 0.5) {
-                radius = mix(0.12, 0.22, influence);
+                radius = mix(dotSizeMin, dotSizeMax, influence);
                 brightness = mix(0.25, 1.0, influence);
             } else if (mode < 1.5) {
                 dotCenter += dir * (influence * maxDisplacement);
+                radius = mix(dotSizeMin, dotSizeMax, influence);
                 brightness = mix(0.25, 1.0, influence);
             } else {
                 dotCenter -= dir * (influence * maxDisplacement);
+                radius = mix(dotSizeMax, dotSizeMin, influence);
                 brightness = mix(0.25, 1.0, 1.0 - influence);
             }
 
-            float dist = radius - length(scaled - dotCenter);
+            float2 delta = scaled - dotCenter;
+            float circleDist = radius - length(delta);
+            float2 q = abs(delta) - float2(radius);
+            float squareDist = radius - (length(max(q, 0.0)) + min(max(q.x, q.y), 0.0));
+            float dist = mix(circleDist, squareDist, shape);
             float dotMask = smoothstep(-0.02, 0.02, dist);
+            float3 dotRGB = baseDot * brightness;
 
             if (dotMask * brightness > bestDotMask * bestBrightness) {
                 bestDotMask = dotMask;
                 bestBrightness = brightness;
+                bestDotColor = dotRGB;
             }
         }
     }
 
-    return half4(half3(bestBrightness * bestDotMask), 1.0);
+    float glowDist = length(float2(uv.x - touchUV.x, (uv.y - touchUV.y) * aspect));
+    float outerGlow = glowAmount * intensity
+        * (1.0 - smoothstep(0.0, influenceRadius * 1.75, glowDist));
+    float innerSpot = intensity
+        * (1.0 - smoothstep(0.0, influenceRadius * 0.42, glowDist));
+    float3 scene = mix(background, bestDotColor, bestDotMask);
+    scene += glow * outerGlow;
+    scene += spot * innerSpot * glowAmount;
+
+    return half4(half3(scene), 1.0);
 }
 
 /// Film grain overlay — Uladzislau Volchyk "Crafting Interactive Tiles in SwiftUI".
@@ -440,4 +491,430 @@ half4 noiseShader(
 ) {
     float noise = fract(sin(dot(position, float2(12.9898, 78.233))) * 43758.5453);
     return half4(half3(noise), 1.0) * color.a;
+}
+
+/// Interactive Tiles — Obsidian Hex variant.
+/// Brushed liquid-metal field with touch-driven specular bloom on a dark
+/// monochrome luxury palette. Applied via `.colorEffect`.
+[[ stitchable ]]
+half4 interactiveTilesLiquidMetal(
+    float2 position,
+    half4 color,
+    float2 size,
+    float2 pointer,
+    float time,
+    float influenceRadius
+) {
+    float2 uv = position / size;
+    float2 p = pointer / size;
+    float aspect = size.x / max(size.y, 1.0);
+
+    float2 delta = uv - p;
+    delta.x *= aspect;
+    float touchDist = length(delta);
+    float touchInfluence = exp(-touchDist * touchDist / max(influenceRadius * influenceRadius * 0.12, 0.001));
+
+    float angle = atan2(uv.y - 0.5, uv.x - 0.5);
+    float radial = length(uv - float2(0.5));
+    float flow = sin(angle * 3.0 + time * 0.8 + radial * 8.0) * 0.5 + 0.5;
+    float ripple = sin(radial * 20.0 - time * 1.2) * 0.5 + 0.5;
+    float streaks = sin((uv.x + uv.y * 0.3) * 40.0 + time * 0.4) * 0.5 + 0.5;
+
+    float metallic = mix(flow, ripple, 0.45) * streaks;
+    metallic = mix(metallic, 1.0, touchInfluence * 0.65);
+
+    half3 dark = half3(0.06, 0.06, 0.07);
+    half3 mid = half3(0.35, 0.36, 0.38);
+    half3 highlight = half3(0.82, 0.84, 0.88);
+    half3 gold = half3(0.75, 0.68, 0.45);
+
+    half3 base = mix(dark, mid, half(metallic * 0.7));
+    base = mix(base, highlight, half(pow(metallic, 2.5) * 0.55));
+    base = mix(base, gold, half(touchInfluence * 0.28));
+
+    float spec = pow(touchInfluence, 3.0) * 0.85;
+    base += half3(spec);
+
+    return half4(base, 1.0);
+}
+
+/// Interactive Tiles — Prism Lattice variant.
+/// Deep-space aurora with iridescent hue cycling and touch-driven chromatic
+/// aberration. Applied via `.colorEffect`.
+[[ stitchable ]]
+half4 interactiveTilesHolographic(
+    float2 position,
+    half4 color,
+    float2 size,
+    float2 pointer,
+    float time,
+    float chromatic
+) {
+    float2 uv = position / size;
+    float2 p = pointer / size;
+
+    float2 delta = uv - p;
+    delta.x *= size.x / max(size.y, 1.0);
+    float touchDist = length(delta);
+    float touchField = exp(-touchDist * touchDist * 10.0);
+
+    float aurora1 = sin(uv.x * 4.0 + time * 0.5) * sin(uv.y * 3.0 + time * 0.3);
+    float aurora2 = cos(uv.x * 6.0 - time * 0.7 + uv.y * 2.0);
+    float aurora = (aurora1 + aurora2) * 0.5 + 0.5;
+
+    float huePhase = uv.x * 3.0 + uv.y * 2.0 + time * 0.6 + touchField * 2.0;
+    float t = fract(huePhase / 6.28318);
+
+    float3 col1 = float3(0.0, 0.9, 1.0);
+    float3 col2 = float3(0.9, 0.1, 0.8);
+    float3 col3 = float3(0.4, 0.2, 1.0);
+
+    float3 rainbow;
+    if (t < 0.33) {
+        rainbow = mix(col1, col2, t * 3.0);
+    } else if (t < 0.66) {
+        rainbow = mix(col2, col3, (t - 0.33) * 3.0);
+    } else {
+        rainbow = mix(col3, col1, (t - 0.66) * 3.0);
+    }
+
+    float chromaShift = touchField * chromatic * 0.025;
+    rainbow.r += chromaShift;
+    rainbow.b -= chromaShift;
+
+    float3 bg = float3(0.02, 0.01, 0.06);
+    float3 result = mix(bg, rainbow, aurora * 0.75 + touchField * 0.42);
+    result += float3(touchField * 0.32);
+
+    return half4(half3(result), 1.0);
+}
+
+/// Icon morph transition — hardens blurred alpha into a crisp silhouette so
+/// two SF Symbols can cross-fade through a gooey blend. From MorphingDemo
+/// (https://github.com/yangliu-1995/MorphingDemo). Applied via `.layerEffect`.
+[[ stitchable ]]
+half4 alphaThreshold(float2 position, SwiftUI::Layer layer) {
+    half4 color = layer.sample(position);
+    half alpha = color.a;
+
+    if (alpha > 0.5) {
+        return half4(color.rgb / alpha, 1.0);
+    } else {
+        return half4(0.0);
+    }
+}
+
+/// Talk Pill morph — mercury melt. The blurred silhouette is stretched
+/// (vertical mic → horizontal wave), swirled, and bridged with filaments.
+/// A chromatic split + specular rim flash at the peak of the melt.
+/// `progress` 0…1 (idle → listening); visual chaos peaks at 0.5.
+[[ stitchable ]]
+half4 liquidMorph(
+    float2 position,
+    SwiftUI::Layer layer,
+    float2 size,
+    float progress,
+    float intensity,
+    float chroma
+) {
+    const float pi = 3.14159265;
+    float p = clamp(progress, 0.0, 1.0);
+    // Wider peak than a plain sine so the melt holds at the midpoint.
+    float melt = pow(sin(p * pi), 0.52);
+
+    half4 src = layer.sample(position);
+    if (melt < 0.008) {
+        if (src.a > half(0.5)) {
+            return half4(src.rgb / max(src.a, half(0.001)), 1.0);
+        }
+        return half4(0.0);
+    }
+
+    float2 center = size * 0.5;
+    float2 d = position - center;
+    float2 uv = d / max(min(size.x, size.y), 1.0);
+
+    // Anisotropic bloom: leave the mic as a vertical tongue, arrive as a
+    // wide wave. Both axes swell at the midpoint so the blob fills the pill.
+    float stretchX = 1.0 + melt * (0.18 + 0.72 * p) * intensity;
+    float stretchY = 1.0 + melt * (0.18 + 0.62 * (1.0 - p)) * intensity;
+    d.x /= stretchX;
+    d.y /= stretchY;
+
+    float radius = length(uv);
+    float vortex = melt * intensity * 1.35 * (1.0 - smoothstep(0.0, 1.15, radius));
+    float cs = cos(vortex);
+    float sn = sin(vortex);
+    d = float2(d.x * cs - d.y * sn, d.x * sn + d.y * cs);
+
+    float t = p * 6.2831853;
+    float2 flow = float2(
+        sin(uv.y * 10.0 + t * 1.8) + 0.5 * sin(uv.x * 16.0 - t * 2.2),
+        cos(uv.x * 9.0  - t * 1.5) + 0.5 * cos(uv.y * 15.0 + t * 2.0)
+    );
+    float2 samplePos = center + d + flow * melt * intensity * 14.0;
+
+    float2 filDir = normalize(flow + float2(0.002, -0.001));
+    float fil = melt * intensity * 9.0;
+    half4 c0 = layer.sample(samplePos);
+    half4 c1 = layer.sample(samplePos + filDir * fil);
+    half4 c2 = layer.sample(samplePos - filDir * fil * 0.7);
+    half4 c3 = layer.sample(samplePos + float2(-filDir.y, filDir.x) * fil * 0.5);
+
+    half alpha = c0.a;
+    half3 rgb = c0.rgb;
+    if (c1.a > alpha) { alpha = c1.a; rgb = c1.rgb; }
+    alpha = max(alpha, c2.a * half(0.62));
+    alpha = max(alpha, c3.a * half(0.48));
+
+    float2 chromaVec = filDir * melt * chroma * 4.0;
+    half rS = layer.sample(samplePos - chromaVec).r;
+    half bS = layer.sample(samplePos + chromaVec).b;
+    rgb.r = mix(rgb.r, rS, half(melt * 0.9));
+    rgb.b = mix(rgb.b, bS, half(melt * 0.9));
+
+    half aL = layer.sample(samplePos + float2(-1.6, 0.0)).a;
+    half aR = layer.sample(samplePos + float2( 1.6, 0.0)).a;
+    half aU = layer.sample(samplePos + float2(0.0, -1.6)).a;
+    half aD = layer.sample(samplePos + float2(0.0,  1.6)).a;
+    float grad = length(float2(float(aR - aL), float(aD - aU)));
+    float spec = smoothstep(0.06, 0.4, grad) * melt;
+    rgb += half3(spec * 1.05);
+
+    // Looser threshold at peak melt → the silhouette grows into a blob.
+    float edge = mix(0.46, 0.18, melt);
+    float a = smoothstep(edge - 0.12, edge + 0.2, float(alpha));
+    if (a < 0.02) {
+        return half4(0.0);
+    }
+
+    rgb = rgb / max(alpha, half(0.001));
+    rgb += half3(melt * melt * 0.16);
+    return half4(rgb, half(a));
+}
+
+/// Flame in Glass — liquid capsule refraction. Wavy displacement over the
+/// layer behind the glass body; applied via `.layerEffect`.
+[[ stitchable ]]
+half4 glassRefraction(float2 position, SwiftUI::Layer layer, float time) {
+    float waveX = sin(time * 4.0 + position.y * 0.05) * 8.0;
+    float waveY = cos(time * 3.0 + position.x * 0.05) * 4.0;
+
+    float2 distortedPosition = position + float2(waveX, waveY);
+    half4 color = layer.sample(distortedPosition);
+
+    color.rgb += half3(0.05, 0.08, 0.12);
+
+    return color;
+}
+
+// MARK: - SDF Liquid blobs (Victor Baro)
+//
+// Final demo from "SDF in Metal: Adding the Liquid to the Glass" — draggable
+// light orbs that merge with smoothUnion. `blobN` packs xy center (aspect-corrected
+// uv space), z radius, w color phase. Applied via `.colorEffect`.
+
+float cs_circleSDF(float2 p, float2 center, float radius) {
+    return length(p - center) - radius;
+}
+
+float cs_smoothUnion(float d1, float d2, float smoothness) {
+    if (smoothness <= 0.001) {
+        return min(d1, d2);
+    }
+    float h = max(smoothness - abs(d1 - d2), 0.0) / smoothness;
+    return min(d1, d2) - h * h * smoothness * 0.25;
+}
+
+float3 cs_liquidBlobPalette(float index, float phase, float flame) {
+    float t = index + sin(phase) * 0.08;
+    // Flame scale — orange → coral → magenta → violet (warm to purple),
+    // matching the Flame in Glass gradient. `flame` no longer branches;
+    // both the standalone blobs and the in-pill option share this scale.
+    float3 a = float3(1.0, 0.58, 0.16);
+    float3 b = float3(1.0, 0.40, 0.26);
+    float3 c = float3(0.80, 0.24, 0.78);
+    float3 d = float3(0.55, 0.16, 0.96);
+    if (t < 1.0) return mix(a, b, t);
+    if (t < 2.0) return mix(b, c, t - 1.0);
+    return mix(c, d, t - 2.0);
+}
+
+half3 cs_renderLiquidScene(
+    float sceneD,
+    float4 blobs[4],
+    float glowAmount,
+    float time,
+    float2 uv,
+    float aspect,
+    float flame
+) {
+    float3 bg = flame > 0.5 ? float3(0.03, 0.015, 0.04) : float3(0.028, 0.03, 0.045);
+    float2 vignetteUV = (uv - 0.5) * 2.0;
+    vignetteUV.x *= aspect;
+    bg += float3(0.0, 0.0, 0.025) * dot(vignetteUV, vignetteUV) * 0.35;
+
+    float weights[4];
+    float wSum = 0.0;
+    for (int i = 0; i < 4; i++) {
+        float di = blobs[i].z;
+        weights[i] = exp(-max(di, 0.0) * 22.0);
+        wSum += weights[i];
+    }
+
+    float3 blobColor = float3(0.0);
+    for (int i = 0; i < 4; i++) {
+        float w = weights[i] / max(wSum, 1e-4);
+        blobColor += cs_liquidBlobPalette(blobs[i].w, time + blobs[i].w * 1.7, flame) * w;
+    }
+
+    float inside = smoothstep(0.007, -0.007, sceneD);
+    float3 scene = mix(bg, blobColor, inside);
+
+  // Bright core — each blob's own distance field.
+    float core = 0.0;
+    for (int i = 0; i < 4; i++) {
+        core += exp(-max(blobs[i].z, 0.0) * 9.0) * 0.55;
+    }
+    scene += blobColor * core * 0.38;
+
+    float outerGlow = exp(-max(sceneD, 0.0) * 14.0) * glowAmount;
+    scene += blobColor * outerGlow * 0.55;
+
+    float rim = smoothstep(0.03, 0.0, abs(sceneD)) * (1.0 - inside);
+    scene += float3(0.92, 0.96, 1.08) * rim * 0.48;
+
+    float2 lightDir = normalize(float2(-0.45, -0.75));
+    float spec = 0.0;
+    for (int i = 0; i < 4; i++) {
+        float2 toBlob = blobs[i].xy;
+        float len = max(length(toBlob), 1e-4);
+        float2 n = toBlob / len;
+        float facing = clamp(dot(n, lightDir), 0.0, 1.0);
+        spec += exp(-max(blobs[i].z, 0.0) * 16.0) * facing;
+    }
+    scene += float3(1.0) * spec * 0.22;
+
+    return half3(scene);
+}
+
+[[ stitchable ]]
+half4 sdfLiquidBlobs(
+    float2 position,
+    half4 color,
+    float2 size,
+    float4 blob0,
+    float4 blob1,
+    float4 blob2,
+    float4 blob3,
+    float smoothness,
+    float time,
+    float glowAmount,
+    float flame
+) {
+    float2 safeSize = max(size, float2(1.0));
+    float aspect = safeSize.y / safeSize.x;
+    float2 uv = position / safeSize;
+    float2 centered = uv - 0.5;
+    centered.x *= aspect;
+
+    float4 blobData[4] = { blob0, blob1, blob2, blob3 };
+    float4 blobs[4];
+
+    float k = max(smoothness, 0.04);
+    float sceneD = 1.0;
+
+    for (int i = 0; i < 4; i++) {
+        float2 center = blobData[i].xy;
+        center.x *= aspect;
+        float radius = blobData[i].z;
+        float di = cs_circleSDF(centered, center, radius);
+        blobs[i] = float4(centered - center, di);
+        blobs[i].w = blobData[i].w;
+        sceneD = cs_smoothUnion(sceneD, di, k);
+    }
+
+    return half4(cs_renderLiquidScene(sceneD, blobs, glowAmount, time, uv, aspect, flame), 1.0);
+}
+
+// MARK: - SDF Flame (signed distance field, no blurred shapes)
+//
+// A flame built from stacked metaballs in UV space (tall/narrow pill). Each
+// ball wobbles with value noise so the tongues morph fluidly; the field is
+// smooth-unioned into one body, colored bottom→top (warm→violet), with a
+// bright inner core and a soft outer glow. Applied via `.colorEffect`, this
+// is far more performant than stacking blurred shapes.
+
+float cs_hash11(float p) {
+    p = fract(p * 0.1031);
+    p *= p + 33.33;
+    p *= p + p;
+    return fract(p);
+}
+
+float cs_vnoise1(float x) {
+    float i = floor(x);
+    float f = fract(x);
+    float u = f * f * (3.0 - 2.0 * f);
+    return mix(cs_hash11(i), cs_hash11(i + 1.0), u);
+}
+
+float3 cs_flameColor(float h) {
+    float3 c0 = float3(1.0, 0.62, 0.14);  // gold (bottom)
+    float3 c1 = float3(1.0, 0.40, 0.10);  // amber
+    float3 c2 = float3(0.62, 0.18, 0.92); // purple
+    float3 c3 = float3(0.56, 0.12, 0.98); // violet (top)
+    if (h < 0.4) return mix(c0, c1, h / 0.4);
+    if (h < 0.7) return mix(c1, c2, (h - 0.4) / 0.3);
+    return mix(c2, c3, clamp((h - 0.7) / 0.3, 0.0, 1.0));
+}
+
+[[ stitchable ]]
+half4 flameSDF(
+    float2 position,
+    half4 color,
+    float2 size,
+    float time,
+    float height,      // vertical reach of the flame (~1.0)
+    float width,       // base thickness (~1.0)
+    float flicker,     // wobble amount (~1.0)
+    float speed,       // animation speed (~1.0)
+    float softness,    // metaball smooth-union (~0.13)
+    float glowStrength // outer glow (~0.55)
+) {
+    float2 safeSize = max(size, float2(1.0));
+    float2 uv = position / safeSize;
+    float x = uv.x - 0.5;
+    float yUp = 1.0 - uv.y;                 // 0 bottom → 1 top
+
+    float tt = time * speed;
+    // Whole-flame lean drifts slowly.
+    float lean = (cs_vnoise1(tt * 1.3) - 0.5) * 0.10 * flicker;
+
+    const int N = 7;
+    float d = 1e5;
+    for (int i = 0; i < N; i++) {
+        float t = float(i) / float(N - 1);          // 0 bottom → 1 top
+        float cy = 0.14 + t * (0.72 * height);      // stacked up the pill
+        float r  = mix(0.36 * width, 0.045 * width, t); // wide base → thin tip
+        float amp = (0.02 + t * 0.17) * flicker;    // more wobble toward the tip
+        float wob = (cs_vnoise1(t * 4.0 + tt * 1.9 + float(i) * 1.7) - 0.5) * amp * 2.0
+                    + sin(tt * 3.2 + t * 6.0) * amp * 0.5
+                    + lean * t;
+        float2 p = float2(x - wob, yUp - cy);
+        p.y *= 0.72;                                // stretch vertically → tongues
+        float di = length(p) - r;
+        d = cs_smoothUnion(d, di, max(softness, 0.01));
+    }
+
+    float inside = smoothstep(0.012, -0.02, d);
+    float core   = smoothstep(0.02, -0.16, d);      // bright inner body
+    float glow   = exp(max(d, 0.0) * -7.0);         // soft outer glow
+    float3 flameCol = cs_flameColor(clamp(yUp, 0.0, 1.0));
+
+    float3 body = flameCol * (0.5 + 0.9 * core) * inside;
+    float3 halo = flameCol * glow * glowStrength * (1.0 - inside);
+    float3 col = min(body + halo, float3(1.4));
+
+    return half4(half3(col), 1.0);
 }

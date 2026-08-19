@@ -46,8 +46,14 @@ struct PhotoRippleView: View {
         ComponentSpecState(defaults: StudioItem.photoRipple.specDefaults),
         sheet: StudioItem.photoRipple.specSheet!
     )
+    /// When false, renders only the card content (no page chrome) so an
+    /// Xcode preview can show the component full-bleed — the card corner
+    /// rounding also drops to 0 so the photo fills the whole frame.
+    var chrome: Bool = true
 
-    private let cardShape = RoundedRectangle(cornerRadius: Theme.Radius.card, style: .continuous)
+    private var cardShape: RoundedRectangle {
+        RoundedRectangle(cornerRadius: chrome ? Theme.Radius.card : 0, style: .continuous)
+    }
 
     private struct ActiveRipple: Identifiable {
         let id = UUID()
@@ -60,20 +66,27 @@ struct PhotoRippleView: View {
     private let maxRipples = 8
 
     var body: some View {
-        ShaderPageLayout(title: title, aspectRatio: 1 / Cloud.bubbleAspect) {
-            TimelineView(.animation) { timeline in
-                let now = timeline.date.timeIntervalSinceReferenceDate
+        if chrome {
+            ShaderPageLayout(title: title, aspectRatio: 1 / Cloud.bubbleAspect) { cardBody }
+        } else {
+            cardBody
+        }
+    }
 
-                GeometryReader { geo in
-                    let size = geo.size
+    @ViewBuilder
+    private var cardBody: some View {
+        TimelineView(.animation) { timeline in
+            let now = timeline.date.timeIntervalSinceReferenceDate
 
-                    rippled(now: now, size: size)
-                        .contentShape(cardShape)
-                        .gesture(
-                            SpatialTapGesture()
-                                .onEnded { value in spawn(at: value.location, now: now) }
-                        )
-                }
+            GeometryReader { geo in
+                let size = geo.size
+
+                rippled(now: now, size: size)
+                    .contentShape(cardShape)
+                    .gesture(
+                        SpatialTapGesture()
+                            .onEnded { value in spawn(at: value.location, now: now) }
+                    )
             }
         }
     }
@@ -129,4 +142,10 @@ struct PhotoRippleView: View {
         Aurora.canvas.ignoresSafeArea()
         PhotoRippleView()
     }
+}
+
+// Card-only: just the component, full-bleed, on its own background.
+#Preview("Liquid Photo · card", traits: .sizeThatFitsLayout) {
+    PhotoRippleView(chrome: false)
+        .frame(width: 430, height: 430)
 }

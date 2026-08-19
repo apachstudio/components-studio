@@ -65,13 +65,42 @@ struct PlaceDeckSpecs: Equatable {
 }
 
 struct SampleGlassPillSpecs: Equatable {
+    var glassOpacity: Double
     var tintOpacity: Double
     var restScale: Double
+    var pressPop: Double
+    var pressScale: Double
 
     @MainActor
     init(_ state: ComponentSpecState, sheet: ComponentSpecSheet) {
+        glassOpacity = sheet.value("glassOpacity", in: state)
         tintOpacity = sheet.value("tintOpacity", in: state)
         restScale = sheet.value("restScale", in: state)
+        pressPop = sheet.value("pressPop", in: state)
+        pressScale = sheet.value("pressScale", in: state)
+    }
+}
+
+struct TalkPillSpecs: Equatable {
+    var glassOpacity: Double
+    var tintOpacity: Double
+    var restScale: Double
+    var pressPop: Double
+    var pressScale: Double
+    var morphBlur: Double
+    var waveSpeed: Double
+    var waveAmplitude: Double
+
+    @MainActor
+    init(_ state: ComponentSpecState, sheet: ComponentSpecSheet) {
+        glassOpacity = sheet.value("glassOpacity", in: state)
+        tintOpacity = sheet.value("tintOpacity", in: state)
+        restScale = sheet.value("restScale", in: state)
+        pressPop = sheet.value("pressPop", in: state)
+        pressScale = sheet.value("pressScale", in: state)
+        morphBlur = sheet.value("morphBlur", in: state)
+        waveSpeed = sheet.value("waveSpeed", in: state)
+        waveAmplitude = sheet.value("waveAmplitude", in: state)
     }
 }
 
@@ -130,12 +159,7 @@ struct BubbleTextRippleSpecs: Equatable {
     var falloff: Double
     var swirl: Double
     var glassRadius: Double
-    var edgeThickness: Double
     var chromatic: Double
-    var rimIntensity: Double
-    var shadowStrength: Double
-    var shadowBlur: Double
-    var shadowOffset: Double
 
     @MainActor
     init(_ state: ComponentSpecState, sheet: ComponentSpecSheet) {
@@ -143,25 +167,7 @@ struct BubbleTextRippleSpecs: Equatable {
         falloff = sheet.value("falloff", in: state)
         swirl = sheet.value("swirl", in: state)
         glassRadius = sheet.value("glassRadius", in: state)
-        edgeThickness = sheet.value("edgeThickness", in: state)
         chromatic = sheet.value("chromatic", in: state)
-        rimIntensity = sheet.value("rimIntensity", in: state)
-        shadowStrength = sheet.value("shadowStrength", in: state)
-        shadowBlur = sheet.value("shadowBlur", in: state)
-        shadowOffset = sheet.value("shadowOffset", in: state)
-    }
-}
-
-struct SphericMeshSpecs: Equatable {
-    var gridDensity: Double
-    var bulgeStrength: Double
-    var dotScale: Double
-
-    @MainActor
-    init(_ state: ComponentSpecState, sheet: ComponentSpecSheet) {
-        gridDensity = sheet.value("gridDensity", in: state)
-        bulgeStrength = sheet.value("bulgeStrength", in: state)
-        dotScale = sheet.value("dotScale", in: state)
     }
 }
 
@@ -170,6 +176,30 @@ struct DottedBackgroundSpecs: Equatable {
     var gridDensity: Double
     var influenceRadius: Double
     var maxDisplacement: Double
+    var bgR: Double
+    var bgG: Double
+    var bgB: Double
+    var bg2R: Double
+    var bg2G: Double
+    var bg2B: Double
+    var dotR: Double
+    var dotG: Double
+    var dotB: Double
+    var accentR: Double
+    var accentG: Double
+    var accentB: Double
+    var glowR: Double
+    var glowG: Double
+    var glowB: Double
+    var glowAmount: Double
+    var accentMix: Double
+    var dotSizeMin: Double
+    var dotSizeMax: Double
+    var spotR: Double
+    var spotG: Double
+    var spotB: Double
+    var fisheyeAmount: Double
+    var dotShape: Double
 
     @MainActor
     init(_ state: ComponentSpecState, sheet: ComponentSpecSheet) {
@@ -177,21 +207,30 @@ struct DottedBackgroundSpecs: Equatable {
         gridDensity = sheet.value("gridDensity", in: state)
         influenceRadius = sheet.value("influenceRadius", in: state)
         maxDisplacement = sheet.value("maxDisplacement", in: state)
-    }
-}
-
-struct GlassEffectShaderSpecs: Equatable {
-    var lensStrength: Double
-    var frostAmount: Double
-    var breatheSpeed: Double
-    var chromaticSplit: Double
-
-    @MainActor
-    init(_ state: ComponentSpecState, sheet: ComponentSpecSheet) {
-        lensStrength = sheet.value("lensStrength", in: state)
-        frostAmount = sheet.value("frostAmount", in: state)
-        breatheSpeed = sheet.value("breatheSpeed", in: state)
-        chromaticSplit = sheet.value("chromaticSplit", in: state)
+        bgR = sheet.value("bgR", in: state)
+        bgG = sheet.value("bgG", in: state)
+        bgB = sheet.value("bgB", in: state)
+        bg2R = sheet.value("bg2R", in: state)
+        bg2G = sheet.value("bg2G", in: state)
+        bg2B = sheet.value("bg2B", in: state)
+        dotR = sheet.value("dotR", in: state)
+        dotG = sheet.value("dotG", in: state)
+        dotB = sheet.value("dotB", in: state)
+        accentR = sheet.value("accentR", in: state)
+        accentG = sheet.value("accentG", in: state)
+        accentB = sheet.value("accentB", in: state)
+        glowR = sheet.value("glowR", in: state)
+        glowG = sheet.value("glowG", in: state)
+        glowB = sheet.value("glowB", in: state)
+        glowAmount = sheet.value("glowAmount", in: state)
+        accentMix = sheet.value("accentMix", in: state)
+        dotSizeMin = sheet.value("dotSizeMin", in: state)
+        dotSizeMax = sheet.value("dotSizeMax", in: state)
+        spotR = sheet.value("spotR", in: state)
+        spotG = sheet.value("spotG", in: state)
+        spotB = sheet.value("spotB", in: state)
+        fisheyeAmount = sheet.value("fisheyeAmount", in: state)
+        dotShape = sheet.value("dotShape", in: state)
     }
 }
 
@@ -200,12 +239,7 @@ struct RefractiveGlassSpecs: Equatable {
     var falloff: Double
     var swirl: Double
     var glassRadius: Double
-    var edgeThickness: Double
     var chromatic: Double
-    var rimIntensity: Double
-    var shadowStrength: Double
-    var shadowBlur: Double
-    var shadowOffset: Double
 
     @MainActor
     init(_ state: ComponentSpecState, sheet: ComponentSpecSheet) {
@@ -213,40 +247,129 @@ struct RefractiveGlassSpecs: Equatable {
         falloff = sheet.value("falloff", in: state)
         swirl = sheet.value("swirl", in: state)
         glassRadius = sheet.value("glassRadius", in: state)
-        edgeThickness = sheet.value("edgeThickness", in: state)
         chromatic = sheet.value("chromatic", in: state)
-        rimIntensity = sheet.value("rimIntensity", in: state)
-        shadowStrength = sheet.value("shadowStrength", in: state)
-        shadowBlur = sheet.value("shadowBlur", in: state)
-        shadowOffset = sheet.value("shadowOffset", in: state)
+    }
+}
+
+struct SDFLiquidSpecs: Equatable {
+    var smoothness: Double
+    var glowAmount: Double
+    var motionSpeed: Double
+    var springStrength: Double
+    var damping: Double
+
+    @MainActor
+    init(_ state: ComponentSpecState, sheet: ComponentSpecSheet) {
+        smoothness = sheet.value("smoothness", in: state)
+        glowAmount = sheet.value("glowAmount", in: state)
+        motionSpeed = sheet.value("motionSpeed", in: state)
+        springStrength = sheet.value("springStrength", in: state)
+        damping = sheet.value("damping", in: state)
+    }
+}
+
+// Flame in Glass — the Glass Pill capsule with one of two fills inside.
+// `fill` < 0.5 → flame gradient; >= 0.5 → SDF liquid blobs (flame palette).
+// The Merge/Glow/Drift knobs tune the liquid-blobs option.
+struct FlameInGlassSpecs: Equatable {
+    var fill: Double
+    var smoothness: Double
+    var glowAmount: Double
+    var motionSpeed: Double
+
+    @MainActor
+    init(_ state: ComponentSpecState, sheet: ComponentSpecSheet) {
+        fill = sheet.value("fill", in: state)
+        smoothness = sheet.value("smoothness", in: state)
+        glowAmount = sheet.value("glowAmount", in: state)
+        motionSpeed = sheet.value("motionSpeed", in: state)
+    }
+}
+
+// SDF Flame — standalone flame component knobs.
+struct FlameSpecs: Equatable {
+    var height: Double
+    var width: Double
+    var flicker: Double
+    var speed: Double
+    var softness: Double
+    var glow: Double
+
+    @MainActor
+    init(_ state: ComponentSpecState, sheet: ComponentSpecSheet) {
+        height = sheet.value("flameHeight", in: state)
+        width = sheet.value("flameWidth", in: state)
+        flicker = sheet.value("flameFlicker", in: state)
+        speed = sheet.value("flameSpeed", in: state)
+        softness = sheet.value("flameSoftness", in: state)
+        glow = sheet.value("flameGlow", in: state)
     }
 }
 
 struct NeumorphicDigitSpecs: Equatable {
-    var displayWidth: Double
-    var cycleInterval: Double
+    var iconSize: Double
+    var revealDelay: Double
+    var motionResponse: Double
+    var motionDamping: Double
+    var surfaceTone: Double
+    var shadowOffsetX: Double
+    var shadowOffsetY: Double
+    var shadowRadius: Double
+    var shadowOpacity: Double
+    var iconOpacity: Double
+    var iconColorR: Double
+    var iconColorG: Double
+    var iconColorB: Double
 
     @MainActor
     init(_ state: ComponentSpecState, sheet: ComponentSpecSheet) {
-        displayWidth = sheet.value("displayWidth", in: state)
-        cycleInterval = sheet.value("cycleInterval", in: state)
+        iconSize = sheet.value("iconSize", in: state)
+        revealDelay = sheet.value("revealDelay", in: state)
+        motionResponse = sheet.value("motionResponse", in: state)
+        motionDamping = sheet.value("motionDamping", in: state)
+        surfaceTone = sheet.value("surfaceTone", in: state)
+        shadowOffsetX = sheet.value("shadowOffsetX", in: state)
+        shadowOffsetY = sheet.value("shadowOffsetY", in: state)
+        shadowRadius = sheet.value("shadowRadius", in: state)
+        shadowOpacity = sheet.value("shadowOpacity", in: state)
+        iconOpacity = sheet.value("iconOpacity", in: state)
+        iconColorR = sheet.value("iconColorR", in: state)
+        iconColorG = sheet.value("iconColorG", in: state)
+        iconColorB = sheet.value("iconColorB", in: state)
     }
 }
 
-struct InteractiveTilesSpecs: Equatable {
-    var influenceDistance: Double
-    var grainOpacity: Double
-    var minCornerRadius: Double
-    var maxCornerRadius: Double
-    var animationDuration: Double
+// Neumorphic Pills — a "+" pill that pops in↔out (morphing + → ×) on tap.
+struct NeumorphicPillsSpecs: Equatable {
+    var iconSize: Double
+    var surfaceTone: Double
+    var shadowOffset: Double
+    var shadowRadius: Double
+    /// Pill bevel shadow strength, pressed-in vs popped-out.
+    var pillShadowIn: Double
+    var pillShadowOut: Double
+    /// Icon emboss shadow strength, pressed-in vs popped-out.
+    var iconShadowIn: Double
+    var iconShadowOut: Double
+    /// In↔out transition spring.
+    var motionResponse: Double
+    var motionDamping: Double
+    /// When true, uses ease-in-out (slow → fast → slow) instead of spring.
+    var motionEase: Bool
 
     @MainActor
     init(_ state: ComponentSpecState, sheet: ComponentSpecSheet) {
-        influenceDistance = sheet.value("influenceDistance", in: state)
-        grainOpacity = sheet.value("grainOpacity", in: state)
-        minCornerRadius = sheet.value("minCornerRadius", in: state)
-        maxCornerRadius = sheet.value("maxCornerRadius", in: state)
-        animationDuration = sheet.value("animationDuration", in: state)
+        iconSize = sheet.value("iconSize", in: state)
+        surfaceTone = sheet.value("surfaceTone", in: state)
+        shadowOffset = sheet.value("shadowOffset", in: state)
+        shadowRadius = sheet.value("shadowRadius", in: state)
+        pillShadowIn = sheet.value("pillShadowIn", in: state)
+        pillShadowOut = sheet.value("pillShadowOut", in: state)
+        iconShadowIn = sheet.value("iconShadowIn", in: state)
+        iconShadowOut = sheet.value("iconShadowOut", in: state)
+        motionResponse = sheet.value("motionResponse", in: state)
+        motionDamping = sheet.value("motionDamping", in: state)
+        motionEase = sheet.value("motionEase", in: state) >= 0.5
     }
 }
 
@@ -270,15 +393,17 @@ extension StudioItem {
         case .bubbleCard: return []
         case .verticalCardDeck: return Self.deckPresets
         case .sampleGlassPill: return Self.glassPillPresets
+        case .talkPill: return Self.talkPillPresets
         case .photoRipple: return Self.photoRipplePresets
         case .photoRipple2: return Self.photoRipple2Presets
         case .bubbleTextRipple: return Self.bubbleTextRipplePresets
         case .refractiveText: return Self.refractiveTextPresets
-        case .sphericMesh: return Self.sphericMeshPresets
         case .dottedBackground: return Self.dottedBackgroundPresets
-        case .glassEffectShader: return Self.glassEffectPresets
         case .neumorphicDigit: return Self.neumorphicDigitPresets
-        case .interactiveTiles: return Self.interactiveTilesPresets
+        case .neumorphicPills: return Self.neumorphicPillsPresets
+        case .sdfLiquid: return Self.sdfLiquidPresets
+        case .flameInGlass: return Self.flameInGlassPresets
+        case .flame: return Self.flamePresets
         }
     }
 
@@ -287,6 +412,14 @@ extension StudioItem {
         switch self {
         case .bubbleCard: return false
         default: return true
+        }
+    }
+
+    /// Dark canvas stages need white FAB glyphs for contrast.
+    var prefersDarkStageChrome: Bool {
+        switch self {
+        case .sampleGlassPill, .talkPill, .flame: return true
+        default: return false
         }
     }
 
@@ -340,19 +473,35 @@ extension StudioItem {
             let s = SampleGlassPillSpecs(state, sheet: sheet)
             return """
             // Generated by Component Studio · preset: \(presetLabel)
-            // Glass Pill — Liquid Glass specs
+            // Glass Pill — Liquid Glass + morphing SF Symbol
 
+            let glassOpacity: Double = \(fmt(s.glassOpacity))
             let tintOpacity: Double = \(fmt(s.tintOpacity))
             let restScale: CGFloat = \(fmt(s.restScale))
+            let pressPop: CGFloat = \(fmt(s.pressPop))
+            let pressScale: CGFloat = \(fmt(s.pressScale))
 
-            // Usage:
-            // .glassEffect(
-            //     tintOpacity > 0.01
-            //         ? .regular.interactive().tint(.white.opacity(tintOpacity))
-            //         : .regular.interactive(),
-            //     in: Capsule()
-            // )
-            // .scaleEffect(restScale)
+            // Morphing icon: bag (empty) ↔ gift.fill.
+            // Uses MorphingSymbolIcon + alphaThreshold shader.
+            """
+
+        case .talkPill:
+            let s = TalkPillSpecs(state, sheet: sheet)
+            return """
+            // Generated by Component Studio · preset: \(presetLabel)
+            // Talk Pill — Glass Pill chrome + mic → live waveform morph
+
+            let glassOpacity: Double = \(fmt(s.glassOpacity))
+            let tintOpacity: Double = \(fmt(s.tintOpacity))
+            let restScale: CGFloat = \(fmt(s.restScale))
+            let pressPop: CGFloat = \(fmt(s.pressPop))
+            let pressScale: CGFloat = \(fmt(s.pressScale))
+            let morphBlur: CGFloat = \(fmt(s.morphBlur))
+            let waveSpeed: Double = \(fmt(s.waveSpeed))
+            let waveAmplitude: Double = \(fmt(s.waveAmplitude))
+
+            // Mic ↔ 5-bar voice waveform via liquidMorph (mercury melt).
+            // Talk letters stagger-suck into the icon; bars overshoot on birth.
             """
 
         case .photoRipple:
@@ -399,20 +548,14 @@ extension StudioItem {
             let falloff: Float = \(fmt(s.falloff))             // distortion curve: 1 - pow(r, falloff)
             let swirl: Float = \(fmt(s.swirl))                 // rotation at center (radians)
             let glassRadius: Float = \(fmt(s.glassRadius))     // lens radius (px)
-            let edgeThickness: Float = \(fmt(s.edgeThickness)) // rim highlight band (px)
             let chromatic: Float = \(fmt(s.chromatic))         // R/B split toward the edge
-            let rimIntensity: Float = \(fmt(s.rimIntensity))   // edge lighting strength
-            let shadowStrength: Float = \(fmt(s.shadowStrength)) // occlusion darkening
-            let shadowBlur: Float = \(fmt(s.shadowBlur))       // shadow feather ring (px)
-            let shadowOffset: Float = \(fmt(s.shadowOffset))   // directional shadow offset (px)
             """
 
         case .refractiveText:
             let s = BubbleTextRippleSpecs(state, sheet: sheet)
             return """
             // Generated by Component Studio · preset: \(presetLabel)
-            // Refractive Text — refractive glass lens over a water-drops photo
-            // with "apach" in Dripdrop; same refractiveGlass shader, draggable lens.
+            // Refractive Text — ping-pong lens on typography only; photo bg stays flat.
 
             // Scale Dripdrop so "apach" sits 12pt from the card edges.
             let textSidePadding: CGFloat = 12
@@ -430,23 +573,7 @@ extension StudioItem {
             let falloff: Float = \(fmt(s.falloff))
             let swirl: Float = \(fmt(s.swirl))
             let glassRadius: Float = \(fmt(s.glassRadius))
-            let edgeThickness: Float = \(fmt(s.edgeThickness))
             let chromatic: Float = \(fmt(s.chromatic))
-            let rimIntensity: Float = \(fmt(s.rimIntensity))
-            let shadowStrength: Float = \(fmt(s.shadowStrength))
-            let shadowBlur: Float = \(fmt(s.shadowBlur))
-            let shadowOffset: Float = \(fmt(s.shadowOffset))
-            """
-
-        case .sphericMesh:
-            let s = SphericMeshSpecs(state, sheet: sheet)
-            return """
-            // Generated by Component Studio · preset: \(presetLabel)
-            // SphericMeshView specs
-
-            let gridDensity: Double = \(fmt(s.gridDensity))
-            let bulgeStrength: Double = \(fmt(s.bulgeStrength))
-            let dotScale: Double = \(fmt(s.dotScale))
             """
 
         case .dottedBackground:
@@ -459,46 +586,92 @@ extension StudioItem {
             let gridDensity: Float = \(fmt(s.gridDensity))
             let influenceRadius: Float = \(fmt(s.influenceRadius))
             let maxDisplacement: Float = \(fmt(s.maxDisplacement))
-            """
-
-        case .glassEffectShader:
-            let s = GlassEffectShaderSpecs(state, sheet: sheet)
-            return """
-            // Generated by Component Studio · preset: \(presetLabel)
-            // GlassEffectShaderView specs
-
-            let lensStrength: Float = \(fmt(s.lensStrength))
-            let frostAmount: Float = \(fmt(s.frostAmount))
-            let breatheSpeed: Float = \(fmt(s.breatheSpeed))
-            let chromaticSplit: Float = \(fmt(s.chromaticSplit))
+            let bgColor = SIMD4<Float>(\(fmt(s.bgR)), \(fmt(s.bgG)), \(fmt(s.bgB)), 0)
+            let bgColor2 = SIMD4<Float>(\(fmt(s.bg2R)), \(fmt(s.bg2G)), \(fmt(s.bg2B)), 0)
+            let dotColor = SIMD4<Float>(\(fmt(s.dotR)), \(fmt(s.dotG)), \(fmt(s.dotB)), 0)
+            let accentColor = SIMD4<Float>(\(fmt(s.accentR)), \(fmt(s.accentG)), \(fmt(s.accentB)), 0)
+            let glowColor = SIMD4<Float>(\(fmt(s.glowR)), \(fmt(s.glowG)), \(fmt(s.glowB)), 0)
+            let spotColor = SIMD4<Float>(\(fmt(s.spotR)), \(fmt(s.spotG)), \(fmt(s.spotB)), 0)
+            let glowAmount: Float = \(fmt(s.glowAmount))
+            let accentMix: Float = \(fmt(s.accentMix))
+            let dotSizeMin: Float = \(fmt(s.dotSizeMin))
+            let dotSizeMax: Float = \(fmt(s.dotSizeMax))
+            let fisheyeAmount: Float = \(fmt(s.fisheyeAmount))
+            let dotShape: Float = \(fmt(s.dotShape))
             """
 
         case .neumorphicDigit:
             let s = NeumorphicDigitSpecs(state, sheet: sheet)
             return """
             // Generated by Component Studio · preset: \(presetLabel)
-            // Neumorphic Digit — Uladzislau Volchyk seven-segment display
-            // (SwiftUI Layout + neumorphic shadows)
+            // Neumorphic Digit — tap card to reveal productivity SF Symbols
 
-            let displayWidth: CGFloat = \(fmt(s.displayWidth))
-            let cycleInterval: Double = \(fmt(s.cycleInterval))  // auto-cycle period (s)
+            let iconSize: CGFloat = \(fmt(s.iconSize))
+            let revealDelay: Double = \(fmt(s.revealDelay))
+            let reveal: Animation = .spring(response: \(fmt(s.motionResponse)), dampingFraction: \(fmt(s.motionDamping)))
+            let surfaceTone: Int = \(Int(s.surfaceTone))    // 0 white, 1 black, 2 sand, 3 slate, 4 ink
             """
 
-        case .interactiveTiles:
-            let s = InteractiveTilesSpecs(state, sheet: sheet)
+        case .neumorphicPills:
+            let s = NeumorphicPillsSpecs(state, sheet: sheet)
             return """
             // Generated by Component Studio · preset: \(presetLabel)
-            // InteractiveTilesView — Uladzislau Volchyk MeshGradient tile grid
+            // Neumorphic Pills — "+" pill pops in↔out (morphs + → ×) on tap
 
-            let influenceDistance: CGFloat = \(fmt(s.influenceDistance))
-            let grainOpacity: CGFloat = \(fmt(s.grainOpacity))
-            let minCornerRadius: CGFloat = \(fmt(s.minCornerRadius))
-            let maxCornerRadius: CGFloat = \(fmt(s.maxCornerRadius))
-            let animationDuration: Double = \(fmt(s.animationDuration))
+            let iconSize: CGFloat = \(fmt(s.iconSize))
+            let surfaceTone: Int = \(Int(s.surfaceTone))
+            let shadowOffset: CGFloat = \(fmt(s.shadowOffset))
+            let shadowRadius: CGFloat = \(fmt(s.shadowRadius))
+            let pillShadowIn: Double = \(fmt(s.pillShadowIn))
+            let pillShadowOut: Double = \(fmt(s.pillShadowOut))
+            let iconShadowIn: Double = \(fmt(s.iconShadowIn))
+            let iconShadowOut: Double = \(fmt(s.iconShadowOut))
+            \(s.motionEase
+                ? "let transition: Animation = .easeInOut(duration: \(fmt(s.motionResponse)))"
+                : "let transition: Animation = .spring(response: \(fmt(s.motionResponse)), dampingFraction: \(fmt(s.motionDamping)))")
+            """
+
+        case .sdfLiquid:
+            let s = SDFLiquidSpecs(state, sheet: sheet)
+            return """
+            // Generated by Component Studio · preset: \(presetLabel)
+            // SDF Liquid — Victor Baro draggable light blobs (smoothUnion merge)
+
+            let smoothness: Float = \(fmt(s.smoothness))       // gooey bridge width (~0.1)
+            let glowAmount: Float = \(fmt(s.glowAmount))
+            let motionSpeed: CGFloat = \(fmt(s.motionSpeed))   // lava-lamp drift
+            // ShaderLibrary.sdfLiquidBlobs via .colorEffect — drag orbs to merge
             """
 
         case .bubbleCard:
             return "// Satelite Cards exports code from its embedded toolbar."
+
+        case .flameInGlass:
+            let s = FlameInGlassSpecs(state, sheet: sheet)
+            return """
+            // Generated by Component Studio · preset: \(presetLabel)
+            // Flame in Glass — Glass Pill capsule (104×332) with a fill inside.
+
+            let fill: Int = \(s.fill >= 0.5 ? 1 : 0)   // 0 = flame gradient, 1 = SDF liquid blobs
+            // Liquid-blobs knobs (flame palette):
+            let merge: Float = \(fmt(s.smoothness))
+            let glow: Float  = \(fmt(s.glowAmount))
+            let drift: CGFloat = \(fmt(s.motionSpeed))
+            """
+
+        case .flame:
+            let s = FlameSpecs(state, sheet: sheet)
+            return """
+            // Generated by Component Studio · preset: \(presetLabel)
+            // Flame — SDF metaball flame (flameSDF Metal shader)
+
+            let height: Float = \(fmt(s.height))
+            let width: Float = \(fmt(s.width))
+            let flicker: Float = \(fmt(s.flicker))
+            let speed: Float = \(fmt(s.speed))
+            let softness: Float = \(fmt(s.softness))
+            let glow: Float = \(fmt(s.glow))
+            """
         }
     }
 
@@ -511,15 +684,17 @@ extension StudioItem {
         .blurFocusLoading: blurFocusSheet,
         .verticalCardDeck: deckSheet,
         .sampleGlassPill: glassPillSheet,
+        .talkPill: talkPillSheet,
         .photoRipple: photoRippleSheet,
         .photoRipple2: photoRipple2Sheet,
         .bubbleTextRipple: bubbleTextRippleSheet,
         .refractiveText: refractiveTextSheet,
-        .sphericMesh: sphericMeshSheet,
         .dottedBackground: dottedBackgroundSheet,
-        .glassEffectShader: glassEffectSheet,
         .neumorphicDigit: neumorphicDigitSheet,
-        .interactiveTiles: interactiveTilesSheet,
+        .neumorphicPills: neumorphicPillsSheet,
+        .sdfLiquid: sdfLiquidSheet,
+        .flameInGlass: flameInGlassSheet,
+        .flame: flameSheet,
     ]
 
     private static let searchPillSheet = ComponentSpecSheet(
@@ -611,12 +786,68 @@ extension StudioItem {
                 id: "glass",
                 label: "Glass",
                 controls: [
+                    .init(id: "glassOpacity", label: "Opacity", kind: .slider(0.15...1.0, format: "%.2f")),
                     .init(id: "tintOpacity", label: "Tint", kind: .slider(0.0...0.60, format: "%.2f")),
+                ]
+            ),
+            ComponentSpecCategory(
+                id: "motion",
+                label: "Motion",
+                controls: [
                     .init(id: "restScale", label: "Scale", kind: .slider(0.96...1.04, format: "%.3f")),
+                    .init(id: "pressPop", label: "Pop", kind: .slider(0.0...0.14, format: "%.2f")),
+                    .init(id: "pressScale", label: "Press", kind: .slider(0.88...1.0, format: "%.2f")),
                 ]
             ),
         ],
-        defaults: ["tintOpacity": 0.0, "restScale": 1.0]
+        defaults: [
+            "glassOpacity": 0.52,
+            "tintOpacity": 0.0,
+            "restScale": 1.04,
+            "pressPop": 0.09,
+            "pressScale": 1.0,
+        ]
+    )
+
+    private static let talkPillSheet = ComponentSpecSheet(
+        categories: [
+            ComponentSpecCategory(
+                id: "glass",
+                label: "Glass",
+                controls: [
+                    .init(id: "glassOpacity", label: "Opacity", kind: .slider(0.15...1.0, format: "%.2f")),
+                    .init(id: "tintOpacity", label: "Tint", kind: .slider(0.0...0.60, format: "%.2f")),
+                ]
+            ),
+            ComponentSpecCategory(
+                id: "motion",
+                label: "Motion",
+                controls: [
+                    .init(id: "restScale", label: "Scale", kind: .slider(0.96...1.04, format: "%.3f")),
+                    .init(id: "pressPop", label: "Pop", kind: .slider(0.0...0.14, format: "%.2f")),
+                    .init(id: "pressScale", label: "Press", kind: .slider(0.88...1.0, format: "%.2f")),
+                    .init(id: "morphBlur", label: "Morph", kind: .slider(8...40, format: "%.0f")),
+                ]
+            ),
+            ComponentSpecCategory(
+                id: "wave",
+                label: "Wave",
+                controls: [
+                    .init(id: "waveSpeed", label: "Speed", kind: .slider(0.40...2.40, format: "%.2f")),
+                    .init(id: "waveAmplitude", label: "Amp", kind: .slider(0.20...1.00, format: "%.2f")),
+                ]
+            ),
+        ],
+        defaults: [
+            "glassOpacity": 0.52,
+            "tintOpacity": 0.0,
+            "restScale": 1.04,
+            "pressPop": 0.09,
+            "pressScale": 1.0,
+            "morphBlur": 36,
+            "waveSpeed": 1.15,
+            "waveAmplitude": 0.72,
+        ]
     )
 
     private static let photoRippleSheet = ComponentSpecSheet(
@@ -641,8 +872,8 @@ extension StudioItem {
             ),
         ],
         defaults: [
-            "amplitude": 30, "frequency": 15, "decay": 6,
-            "speed": 400, "highlight": 0.45, "duration": 1.5,
+            "amplitude": 31, "frequency": 16, "decay": 3.0,
+            "speed": 400, "highlight": 0.43, "duration": 3.0,
         ]
     )
 
@@ -679,74 +910,41 @@ extension StudioItem {
             ),
         ],
         defaults: [
-            "speed": 200, "bandWidth": 24, "maxRadius": 640,
-            "refract": 0, "glint": 0.16, "falloff": 10.3, "swirl": 0.59,
-            "displacement": 6, "life": 1.7, "emitSpacing": 30, "chromatic": 0.00,
+            "speed": 200, "bandWidth": 24, "maxRadius": 900,
+            "refract": 90, "glint": 0.48, "falloff": 1.0, "swirl": 0.0,
+            "displacement": 9.22, "life": 0.8, "emitSpacing": 60, "chromatic": 0.00,
         ]
     )
+
+    // Shared lens controls for all refractive-glass components (no edge/shadow chrome).
+    private static let refractiveLensCategories: [ComponentSpecCategory] = [
+        ComponentSpecCategory(
+            id: "lens",
+            label: "Lens",
+            controls: [
+                .init(id: "refraction", label: "Refract", kind: .slider(0.0...1.2, format: "%.2f")),
+                .init(id: "falloff", label: "Falloff", kind: .slider(1.0...16.0, format: "%.1f")),
+                .init(id: "swirl", label: "Swirl", kind: .slider(0.0...6.28, format: "%.2f")),
+                .init(id: "glassRadius", label: "Radius", kind: .slider(60...260, format: "%.0f")),
+                .init(id: "chromatic", label: "Chroma", kind: .slider(0.0...0.4, format: "%.2f")),
+            ]
+        ),
+    ]
 
     // Refractive Sphere — default tuning from reference screenshots.
     private static let bubbleTextRippleSheet = ComponentSpecSheet(
-        categories: [
-            ComponentSpecCategory(
-                id: "lens",
-                label: "Lens",
-                controls: [
-                    .init(id: "refraction", label: "Refract", kind: .slider(0.0...0.6, format: "%.2f")),
-                    .init(id: "falloff", label: "Falloff", kind: .slider(1.0...16.0, format: "%.1f")),
-                    .init(id: "swirl", label: "Swirl", kind: .slider(0.0...6.28, format: "%.2f")),
-                    .init(id: "glassRadius", label: "Radius", kind: .slider(60...260, format: "%.0f")),
-                    .init(id: "chromatic", label: "Chroma", kind: .slider(0.0...0.4, format: "%.2f")),
-                ]
-            ),
-            ComponentSpecCategory(
-                id: "edge",
-                label: "Edge",
-                controls: [
-                    .init(id: "edgeThickness", label: "Thickness", kind: .slider(2...40, format: "%.0f")),
-                    .init(id: "rimIntensity", label: "Glint", kind: .slider(0.0...2.0, format: "%.2f")),
-                ]
-            ),
-            ComponentSpecCategory(
-                id: "shadow",
-                label: "Shadow",
-                controls: [
-                    .init(id: "shadowStrength", label: "Strength", kind: .slider(0.0...0.5, format: "%.2f")),
-                    .init(id: "shadowBlur", label: "Blur", kind: .slider(10...140, format: "%.0f")),
-                    .init(id: "shadowOffset", label: "Offset", kind: .slider(0...48, format: "%.0f")),
-                ]
-            ),
-        ],
+        categories: refractiveLensCategories,
         defaults: [
-            "refraction": 0.60, "falloff": 8.1, "swirl": 0.00, "glassRadius": 88, "chromatic": 0.00,
-            "edgeThickness": 23, "rimIntensity": 0.60,
-            "shadowStrength": 0.31, "shadowBlur": 35, "shadowOffset": 0,
+            "refraction": 0.95, "falloff": 8.1, "swirl": 0.00, "glassRadius": 88, "chromatic": 0.00,
         ]
     )
 
-    // Refractive Text — original Liquid preset tuning over water-drops + typography.
+    // Refractive Text — liquid typography + ping-pong glass lens on text only.
     private static let refractiveTextSheet = ComponentSpecSheet(
-        categories: bubbleTextRippleSheet.categories,
+        categories: refractiveLensCategories,
         defaults: [
-            "refraction": 0.36, "falloff": 15.4, "swirl": 0.86, "glassRadius": 86, "chromatic": 0.00,
-            "edgeThickness": 2, "rimIntensity": 0.00,
-            "shadowStrength": 0.00, "shadowBlur": 10, "shadowOffset": 0,
+            "refraction": 0.70, "falloff": 14.2, "swirl": 1.12, "glassRadius": 82, "chromatic": 0.04,
         ]
-    )
-
-    private static let sphericMeshSheet = ComponentSpecSheet(
-        categories: [
-            ComponentSpecCategory(
-                id: "mesh",
-                label: "Mesh",
-                controls: [
-                    .init(id: "gridDensity", label: "Density", kind: .slider(10.0...28.0, format: "%.0f")),
-                    .init(id: "bulgeStrength", label: "Bulge", kind: .slider(0.4...1.5, format: "%.2f")),
-                    .init(id: "dotScale", label: "Dot scale", kind: .slider(0.5...2.5, format: "%.2f")),
-                ]
-            ),
-        ],
-        defaults: ["gridDensity": 18.0, "bulgeStrength": 1.0, "dotScale": 1.35]
     )
 
     private static let dottedBackgroundSheet = ComponentSpecSheet(
@@ -757,7 +955,8 @@ extension StudioItem {
                 controls: [
                     .init(id: "mode", label: "Mode", kind: .slider(0.0...2.0, format: "%.0f")),
                     .init(id: "influenceRadius", label: "Radius", kind: .slider(0.15...0.60, format: "%.2f")),
-                    .init(id: "maxDisplacement", label: "Push", kind: .slider(0.20...1.00, format: "%.2f")),
+                    .init(id: "maxDisplacement", label: "Push", kind: .slider(0.10...1.00, format: "%.2f")),
+                    .init(id: "fisheyeAmount", label: "Fisheye", kind: .slider(0.0...0.50, format: "%.2f")),
                 ]
             ),
             ComponentSpecCategory(
@@ -765,31 +964,114 @@ extension StudioItem {
                 label: "Grid",
                 controls: [
                     .init(id: "gridDensity", label: "Density", kind: .slider(20.0...60.0, format: "%.0f")),
+                    .init(id: "dotSizeMin", label: "Dot min", kind: .slider(0.06...0.20, format: "%.2f")),
+                    .init(id: "dotSizeMax", label: "Dot max", kind: .slider(0.14...0.35, format: "%.2f")),
+                    .init(id: "dotShape", label: "Shape", kind: .slider(0.0...1.0, format: "%.2f")),
+                ]
+            ),
+            ComponentSpecCategory(
+                id: "palette",
+                label: "Palette",
+                controls: [
+                    .init(id: "glowAmount", label: "Glow", kind: .slider(0.0...1.0, format: "%.2f")),
+                    .init(id: "accentMix", label: "Accent", kind: .slider(0.0...1.0, format: "%.2f")),
+                    .init(id: "spotR", label: "Spot R", kind: .slider(0.0...1.0, format: "%.2f")),
+                    .init(id: "spotG", label: "Spot G", kind: .slider(0.0...1.0, format: "%.2f")),
+                    .init(id: "spotB", label: "Spot B", kind: .slider(0.0...1.0, format: "%.2f")),
                 ]
             ),
         ],
         defaults: [
-            "mode": 0.0, "gridDensity": 40.0,
-            "influenceRadius": 0.40, "maxDisplacement": 0.60,
+            // Tuned "Pinned 4" promoted to default — black canvas, cyan
+            // repel dots, dome fisheye.
+            "mode": 1.0, "gridDensity": 60.0,
+            "influenceRadius": 0.60, "maxDisplacement": 0.10,
+            "fisheyeAmount": 0.29, "dotShape": 0.0,
+            "bgR": 0.0, "bgG": 0.0, "bgB": 0.0,
+            "bg2R": 0.0, "bg2G": 0.0, "bg2B": 0.0,
+            "dotR": 1.0, "dotG": 1.0, "dotB": 1.0,
+            "accentR": 0.0, "accentG": 0.85, "accentB": 1.0,
+            "glowR": 0.0, "glowG": 0.85, "glowB": 1.0,
+            "spotR": 0.0, "spotG": 0.85, "spotB": 1.0,
+            "glowAmount": 0.0, "accentMix": 0.0,
+            "dotSizeMin": 0.12, "dotSizeMax": 0.22,
         ]
     )
 
-    private static let glassEffectSheet = ComponentSpecSheet(
+    private static let sdfLiquidSheet = ComponentSpecSheet(
         categories: [
             ComponentSpecCategory(
-                id: "lens",
-                label: "Lens",
+                id: "liquid",
+                label: "Liquid",
                 controls: [
-                    .init(id: "lensStrength", label: "Strength", kind: .slider(0.5...2.0, format: "%.2f")),
-                    .init(id: "frostAmount", label: "Frost", kind: .slider(0.0...0.50, format: "%.2f")),
-                    .init(id: "breatheSpeed", label: "Breathe", kind: .slider(0.5...2.5, format: "%.1fx")),
-                    .init(id: "chromaticSplit", label: "Chroma", kind: .slider(0.8...1.4, format: "%.2f")),
+                    .init(id: "smoothness", label: "Merge", kind: .slider(0.04...0.22, format: "%.3f")),
+                    .init(id: "glowAmount", label: "Glow", kind: .slider(0.0...1.0, format: "%.2f")),
+                    .init(id: "motionSpeed", label: "Drift", kind: .slider(0.0...0.12, format: "%.3f")),
+                ]
+            ),
+            ComponentSpecCategory(
+                id: "motion",
+                label: "Motion",
+                controls: [
+                    .init(id: "springStrength", label: "Spring", kind: .slider(2.0...24.0, format: "%.1f")),
+                    .init(id: "damping", label: "Damping", kind: .slider(0.70...0.98, format: "%.2f")),
                 ]
             ),
         ],
         defaults: [
-            "lensStrength": 1.0, "frostAmount": 0.22,
-            "breatheSpeed": 1.0, "chromaticSplit": 1.0,
+            "smoothness": 0.10,
+            "glowAmount": 0.72,
+            "motionSpeed": 0.045,
+            "springStrength": 14.0,
+            "damping": 0.88,
+        ]
+    )
+
+    // Flame in Glass — `fill` is preset-driven (not a slider); the Liquid
+    // knobs tune the SDF liquid-blobs option.
+    private static let flameInGlassSheet = ComponentSpecSheet(
+        categories: [
+            ComponentSpecCategory(
+                id: "liquid",
+                label: "Liquid",
+                controls: [
+                    .init(id: "smoothness", label: "Merge", kind: .slider(0.04...0.22, format: "%.3f")),
+                    .init(id: "glowAmount", label: "Glow", kind: .slider(0.0...1.0, format: "%.2f")),
+                    .init(id: "motionSpeed", label: "Drift", kind: .slider(0.0...0.12, format: "%.3f")),
+                ]
+            ),
+        ],
+        defaults: [
+            "fill": 0.0,
+            "smoothness": 0.182,
+            "glowAmount": 0.35,
+            "motionSpeed": 0.120,
+        ]
+    )
+
+    // Standalone SDF Flame component.
+    private static let flameSheet = ComponentSpecSheet(
+        categories: [
+            ComponentSpecCategory(
+                id: "flame",
+                label: "Flame",
+                controls: [
+                    .init(id: "flameHeight", label: "Height", kind: .slider(0.5...1.5, format: "%.2f")),
+                    .init(id: "flameWidth", label: "Width", kind: .slider(0.5...1.5, format: "%.2f")),
+                    .init(id: "flameFlicker", label: "Flicker", kind: .slider(0.0...2.0, format: "%.2f")),
+                    .init(id: "flameSpeed", label: "Speed", kind: .slider(0.2...3.0, format: "%.2f")),
+                    .init(id: "flameSoftness", label: "Softness", kind: .slider(0.02...0.30, format: "%.2f")),
+                    .init(id: "flameGlow", label: "Glow", kind: .slider(0.0...1.5, format: "%.2f")),
+                ]
+            ),
+        ],
+        defaults: [
+            "flameHeight": 1.0,
+            "flameWidth": 1.0,
+            "flameFlicker": 1.0,
+            "flameSpeed": 1.0,
+            "flameSoftness": 0.13,
+            "flameGlow": 0.55,
         ]
     )
 
@@ -799,40 +1081,100 @@ extension StudioItem {
                 id: "display",
                 label: "Display",
                 controls: [
-                    .init(id: "displayWidth", label: "Width", kind: .slider(60...160, format: "%.0f")),
-                    .init(id: "cycleInterval", label: "Cycle", kind: .slider(0.4...3.0, format: "%.1fs")),
-                ]
-            ),
-        ],
-        defaults: ["displayWidth": 100.0, "cycleInterval": 1.0]
-    )
-
-    private static let interactiveTilesSheet = ComponentSpecSheet(
-        categories: [
-            ComponentSpecCategory(
-                id: "interaction",
-                label: "Interaction",
-                controls: [
-                    .init(id: "influenceDistance", label: "Influence", kind: .slider(80.0...320.0, format: "%.0f")),
-                    .init(id: "minCornerRadius", label: "Min radius", kind: .slider(0.05...0.35, format: "%.2f")),
-                    .init(id: "maxCornerRadius", label: "Max radius", kind: .slider(0.35...0.65, format: "%.2f")),
-                    .init(id: "animationDuration", label: "Ease", kind: .slider(0.05...0.40, format: "%.2fs")),
+                    .init(id: "iconSize", label: "Icon", kind: .slider(32...80, format: "%.0f")),
+                    .init(id: "surfaceTone", label: "Surface", kind: .slider(0.0...4.0, format: "%.0f")),
+                    .init(id: "iconOpacity", label: "Opacity", kind: .slider(0.0...1.0, format: "%.2f")),
+                    .init(id: "iconColor", label: "Color", kind: .color),
                 ]
             ),
             ComponentSpecCategory(
-                id: "texture",
-                label: "Texture",
+                id: "shadow",
+                label: "Shadow",
                 controls: [
-                    .init(id: "grainOpacity", label: "Grain", kind: .slider(0.50...1.00, format: "%.2f")),
+                    .init(id: "shadowOffsetX", label: "Offset X", kind: .slider(-16.0...16.0, format: "%.0f")),
+                    .init(id: "shadowOffsetY", label: "Offset Y", kind: .slider(-16.0...16.0, format: "%.0f")),
+                    .init(id: "shadowRadius", label: "Blur", kind: .slider(0.0...20.0, format: "%.0f")),
+                    .init(id: "shadowOpacity", label: "Strength", kind: .slider(0.0...1.0, format: "%.2f")),
+                ]
+            ),
+            ComponentSpecCategory(
+                id: "motion",
+                label: "Motion",
+                controls: [
+                    .init(id: "motionResponse", label: "Response", kind: .slider(0.1...1.0, format: "%.2f")),
+                    .init(id: "motionDamping", label: "Damping", kind: .slider(0.4...1.0, format: "%.2f")),
+                    .init(id: "revealDelay", label: "Delay", kind: .slider(0.0...1.2, format: "%.1fs")),
                 ]
             ),
         ],
         defaults: [
-            "influenceDistance": 200.0,
-            "grainOpacity": 0.88,
-            "minCornerRadius": 0.2,
-            "maxCornerRadius": 0.5,
-            "animationDuration": 0.15,
+            "iconSize": 80.0,
+            "surfaceTone": 0.0,
+            "iconOpacity": 0.90,
+            "motionResponse": 0.45,
+            "motionDamping": 0.78,
+            "revealDelay": 0.0,
+            "shadowOffsetX": 1.0,
+            "shadowOffsetY": 9.0,
+            "shadowRadius": 2.0,
+            "shadowOpacity": 0.01,
+            // Icon color — white.
+            "iconColorR": 1.0,
+            "iconColorG": 1.0,
+            "iconColorB": 1.0,
+        ]
+    )
+
+    private static let neumorphicPillsSheet = ComponentSpecSheet(
+        categories: [
+            ComponentSpecCategory(
+                id: "display",
+                label: "Display",
+                controls: [
+                    .init(id: "iconSize", label: "Icon", kind: .slider(32...140, format: "%.0f")),
+                    .init(id: "surfaceTone", label: "Surface", kind: .slider(0.0...4.0, format: "%.0f")),
+                    .init(id: "shadowOffset", label: "Offset", kind: .slider(0.0...16.0, format: "%.0f")),
+                    .init(id: "shadowRadius", label: "Blur", kind: .slider(0.0...20.0, format: "%.0f")),
+                ]
+            ),
+            ComponentSpecCategory(
+                id: "pillShadow",
+                label: "Pill",
+                controls: [
+                    .init(id: "pillShadowIn", label: "Shadow in", kind: .slider(0.0...1.0, format: "%.2f")),
+                    .init(id: "pillShadowOut", label: "Shadow out", kind: .slider(0.0...1.0, format: "%.2f")),
+                ]
+            ),
+            ComponentSpecCategory(
+                id: "iconShadow",
+                label: "Icon",
+                controls: [
+                    .init(id: "iconShadowIn", label: "Shadow in", kind: .slider(0.0...1.0, format: "%.2f")),
+                    .init(id: "iconShadowOut", label: "Shadow out", kind: .slider(0.0...1.0, format: "%.2f")),
+                ]
+            ),
+            ComponentSpecCategory(
+                id: "motion",
+                label: "Motion",
+                controls: [
+                    .init(id: "motionEase", label: "Ease", kind: .toggle),
+                    .init(id: "motionResponse", label: "Response", kind: .slider(0.1...1.0, format: "%.2f")),
+                    .init(id: "motionDamping", label: "Damping", kind: .slider(0.4...1.0, format: "%.2f")),
+                ]
+            ),
+        ],
+        defaults: [
+            "iconSize": 73.0,
+            "surfaceTone": 0.0,
+            "shadowOffset": 1.17,
+            "shadowRadius": 2.29,
+            "pillShadowIn": 0.62,
+            "pillShadowOut": 0.46,
+            "iconShadowIn": 1.0,
+            "iconShadowOut": 1.0,
+            "motionEase": 1.0,
+            "motionResponse": 0.60,
+            "motionDamping": 1.00,
         ]
     )
 
@@ -854,6 +1196,10 @@ extension StudioItem {
         .init(id: "default", label: "Default", values: [:]),
     ]
 
+    private static let talkPillPresets: [StudioComponentPreset] = [
+        .init(id: "default", label: "Default", values: [:]),
+    ]
+
     private static let photoRipplePresets: [StudioComponentPreset] = [
         .init(id: "default", label: "Default", values: [:]),
     ]
@@ -870,23 +1216,63 @@ extension StudioItem {
         .init(id: "default", label: "Default", values: [:]),
     ]
 
-    private static let sphericMeshPresets: [StudioComponentPreset] = [
-        .init(id: "default", label: "Default", values: [:]),
-    ]
-
     private static let dottedBackgroundPresets: [StudioComponentPreset] = [
         .init(id: "default", label: "Default", values: [:]),
-    ]
-
-    private static let glassEffectPresets: [StudioComponentPreset] = [
-        .init(id: "default", label: "Default", values: [:]),
+        // Baked from the user's runtime pin "Pinned 2" — white canvas,
+        // blue attract dots.
+        .init(id: "pinned-2", label: "Pinned 2", values: [
+            "mode": 1, "gridDensity": 20, "influenceRadius": 0.4035,
+            "maxDisplacement": 1.0, "fisheyeAmount": 0.0, "dotShape": 0,
+            "bgR": 0.98, "bgG": 0.98, "bgB": 1.0,
+            "bg2R": 0.94, "bg2G": 0.96, "bg2B": 1.0,
+            "dotR": 0.22, "dotG": 0.50, "dotB": 0.94,
+            "accentR": 0.12, "accentG": 0.38, "accentB": 0.88,
+            "glowR": 0.35, "glowG": 0.62, "glowB": 1.0,
+            "spotR": 0, "spotG": 0, "spotB": 0,
+            "glowAmount": 0, "accentMix": 1.0,
+            "dotSizeMin": 0.06, "dotSizeMax": 0.1983,
+        ]),
+        // Baked from the user's runtime pin "Pinned 4" — black canvas,
+        // cyan repel dots with fisheye.
+        .init(id: "pinned-4", label: "Pinned 4", values: [
+            "mode": 1.3028, "gridDensity": 40, "influenceRadius": 0.4,
+            "maxDisplacement": 0.65, "fisheyeAmount": 0.12, "dotShape": 0,
+            "bgR": 0, "bgG": 0, "bgB": 0,
+            "bg2R": 0, "bg2G": 0, "bg2B": 0,
+            "dotR": 1.0, "dotG": 1.0, "dotB": 1.0,
+            "accentR": 0, "accentG": 0.85, "accentB": 1.0,
+            "glowR": 0, "glowG": 0.85, "glowB": 1.0,
+            "spotR": 0, "spotG": 0.85, "spotB": 1.0,
+            "glowAmount": 0, "accentMix": 0,
+            "dotSizeMin": 0.12, "dotSizeMax": 0.22,
+        ]),
     ]
 
     private static let neumorphicDigitPresets: [StudioComponentPreset] = [
         .init(id: "default", label: "Default", values: [:]),
     ]
 
-    private static let interactiveTilesPresets: [StudioComponentPreset] = [
+    private static let neumorphicPillsPresets: [StudioComponentPreset] = [
+        .init(id: "default", label: "Default", values: [:]),
+    ]
+
+    private static let sdfLiquidPresets: [StudioComponentPreset] = [
+        .init(id: "default", label: "Default", values: [:]),
+    ]
+
+    private static let flameInGlassPresets: [StudioComponentPreset] = [
+        // Default — the original traveling flame gradient.
+        .init(id: "default", label: "Flame", values: ["fill": 0]),
+        // Liquid blobs (flame palette) at the attached specs.
+        .init(id: "liquid-blobs", label: "Liquid Blobs", values: [
+            "fill": 1,
+            "smoothness": 0.220,
+            "glowAmount": 0.35,
+            "motionSpeed": 0.120,
+        ]),
+    ]
+
+    private static let flamePresets: [StudioComponentPreset] = [
         .init(id: "default", label: "Default", values: [:]),
     ]
 }

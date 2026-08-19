@@ -47,6 +47,11 @@ struct SearchBoxView: View {
     )
 
     @FocusState private var focused: Bool
+    /// Visual "open" state, decoupled from keyboard focus. Latches true once
+    /// the bar is focused and stays open even if the keyboard is dismissed
+    /// (e.g. tapping the blank canvas) — so the bar doesn't collapse back.
+    /// Only `submit()` returns it to the collapsed rest state.
+    @State private var expanded = false
     @State private var mode: SearchMode = .ai
     @State private var typed = ""
     @State private var phraseIndex = 0
@@ -58,7 +63,7 @@ struct SearchBoxView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: inputToPillsGap) {
             inputRow
-            if focused {
+            if expanded {
                 bottomRow
                     .transition(
                         .asymmetric(
@@ -70,9 +75,9 @@ struct SearchBoxView: View {
         }
         .padding(.horizontal, 20)
         .padding(.top, 14)
-        .padding(.bottom, focused ? 10 : 14)
-        .frame(height: focused ? expandedHeight : collapsedHeight)
-        .modifier(LiquidGlassContainer(focused: focused, cornerRadius: cornerRadius))
+        .padding(.bottom, expanded ? 10 : 14)
+        .frame(height: expanded ? expandedHeight : collapsedHeight)
+        .modifier(LiquidGlassContainer(focused: expanded, cornerRadius: cornerRadius))
         .overlay(aiAura)
         // Snake only renders in AI mode — Standard is fully neutral.
         .overlay {
@@ -87,22 +92,30 @@ struct SearchBoxView: View {
         // `.matchedTransitionSource(id: "search", in: ns)` so the system's
         // `.zoom` navigation transition can interpolate position, size and
         // corner radius automatically — Photos / App Library style).
-        .opacity(focused ? 0.95 : 0.78)
+        .opacity(expanded ? 0.95 : 0.78)
         .simultaneousGesture(
             TapGesture().onEnded { focused = true }
         )
-        .scaleEffect(focused ? motionSpecs.focusScale : 1.0)
+        .scaleEffect(expanded ? motionSpecs.focusScale : 1.0)
         // Smooth spring drives container height, bottom-row reveal, opacity,
-        // and scale — all in sync when the bar gains/loses focus.
+        // and scale — all in sync when the bar opens / closes.
         .animation(
             .spring(response: motionSpecs.focusResponse, dampingFraction: motionSpecs.focusDamping),
-            value: focused
+            value: expanded
         )
         .animation(.spring(response: 0.3, dampingFraction: 0.78), value: mode)
+        // Gaining keyboard focus latches the bar open. Losing focus (tapping
+        // the blank canvas) does NOT collapse it — only `submit()` does.
+        .onChange(of: focused) { _, isFocused in
+            if isFocused { expanded = true }
+        }
         .task { await runTypewriter() }
         .task { await blinkCaret() }
         .onAppear {
-            if initialFocused { focused = true }
+            if initialFocused {
+                focused = true
+                expanded = true
+            }
         }
     }
 
@@ -128,7 +141,7 @@ struct SearchBoxView: View {
 
     private var inputRow: some View {
         ZStack(alignment: .leading) {
-            if !focused && text.isEmpty {
+            if !expanded && text.isEmpty {
                 HStack(spacing: 0) {
                     Text(typed)
                     Text("▏").opacity(caretOn ? 1 : 0)
@@ -158,7 +171,7 @@ struct SearchBoxView: View {
     /// Tap clears the field and keeps focus so the user keeps typing.
     @ViewBuilder
     private var clearButton: some View {
-        if focused && !text.isEmpty {
+        if expanded && !text.isEmpty {
             Button {
                 text = ""
                 focused = true
@@ -250,7 +263,7 @@ struct SearchBoxView: View {
             .shadow(
                 color: .black.opacity(
                     target == .standard
-                        ? (focused ? 0.06 : 0.14)
+                        ? (expanded ? 0.06 : 0.14)
                         : 0
                 ),
                 radius: 2,
@@ -301,7 +314,7 @@ struct SearchBoxView: View {
     /// the Liquid Glass surface, never as a tint. Freezes under Reduce Motion.
     private var aiAura: some View {
         TimelineView(.animation) { tl in
-            let period: Double = focused
+            let period: Double = expanded
                 ? motionSpecs.auraPeriodFocused
                 : motionSpecs.auraPeriodRest
             let angle = reduceMotion
@@ -317,7 +330,7 @@ struct SearchBoxView: View {
                     )
                 )
                 .blur(radius: 10)
-                .opacity(focused ? 0.20 : 0.13)
+                .opacity(expanded ? 0.20 : 0.13)
                 .allowsHitTesting(false)
         }
     }
@@ -326,7 +339,7 @@ struct SearchBoxView: View {
 
     private var snakeStroke: some View {
         TimelineView(.animation) { tl in
-            let period: Double = focused
+            let period: Double = expanded
                 ? motionSpecs.auraPeriodFocused
                 : motionSpecs.auraPeriodRest
             let angle = reduceMotion
@@ -336,15 +349,15 @@ struct SearchBoxView: View {
             RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                 .strokeBorder(
                     AngularGradient(
-                        gradient: Gradient(stops: snakeStops(focused: focused)),
+                        gradient: Gradient(stops: snakeStops(focused: expanded)),
                         center: .center,
                         angle: .degrees(angle)
                     ),
-                    lineWidth: focused ? motionSpecs.snakeWidthFocused : motionSpecs.snakeWidthRest
+                    lineWidth: expanded ? motionSpecs.snakeWidthFocused : motionSpecs.snakeWidthRest
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                        .strokeBorder(Color.white.opacity(focused ? 0.10 : 0.06), lineWidth: 0.5)
+                        .strokeBorder(Color.white.opacity(expanded ? 0.10 : 0.06), lineWidth: 0.5)
                 )
         }
         .allowsHitTesting(false)
@@ -382,6 +395,7 @@ struct SearchBoxView: View {
         let q = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !q.isEmpty else { return }
         focused = false
+        expanded = false
         onSubmit(q)
     }
 
@@ -394,7 +408,7 @@ struct SearchBoxView: View {
 
     private func runTypewriter() async {
         while !Task.isCancelled {
-            if focused || !text.isEmpty {
+            if expanded || !text.isEmpty {
                 typed = ""
                 try? await Task.sleep(nanoseconds: 300_000_000)
                 continue

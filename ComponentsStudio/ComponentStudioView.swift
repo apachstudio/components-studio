@@ -182,6 +182,9 @@ private struct ComponentStudioStage: View {
 
     @State private var recordingMode = false
     @State private var searchText = ""
+    @State private var fullScreen = false
+    /// Full-screen dismiss affordance — hidden until a double-tap reveals it.
+    @State private var showFullScreenClose = false
     @State private var specState: ComponentSpecState
 
     init(item: StudioItem) {
@@ -209,6 +212,25 @@ private struct ComponentStudioStage: View {
                     }
                 }
         }
+        // Full-screen (landscape) toggle — Shaders category only (not Dotted).
+        .overlay(alignment: .bottomLeading) {
+            if item.usesShaderChrome && item != .dottedBackground && !recordingMode {
+                StudioCircleFAB(
+                    symbol: "arrow.up.left.and.arrow.down.right",
+                    isActive: false,
+                    glyphColor: item.prefersDarkStageChrome ? .white : Aurora.iconInk,
+                    accessibilityLabel: "Full screen"
+                ) {
+                    showFullScreenClose = false
+                    fullScreen = true
+                }
+                .padding(.horizontal, StudioLayout.horizontalPadding)
+                .padding(.bottom, 28)
+            }
+        }
+        .fullScreenCover(isPresented: $fullScreen) {
+            fullScreenStage
+        }
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         // Shader pages draw their own back + breadcrumb in ShaderPageLayout,
@@ -226,19 +248,72 @@ private struct ComponentStudioStage: View {
                 state: specState,
                 showToolbar: !recordingMode
             ) {
-                stageContent
+                stageContent()
                     .frame(maxWidth: item.maxWidth)
                     .padding(.horizontal, item.horizontalPadding)
             }
         } else {
-            stageContent
+            stageContent()
                 .frame(maxWidth: item.maxWidth)
                 .padding(.horizontal, item.horizontalPadding)
         }
     }
 
+    /// Landscape full-screen view of the card content (chrome stripped), so
+    /// the animation + its background fill the whole screen. Available on the
+    /// Shaders category only. Tap anywhere to dismiss.
+    private var fullScreenStage: some View {
+        ZStack {
+            Color.black.ignoresSafeArea()
+
+            GeometryReader { geo in
+                if item.fullScreenFillsDevice {
+                    // Native device size — no rotation, so the shader's grid
+                    // matches the screen 1:1 and nothing is stretched.
+                    stageContent(chrome: false)
+                        .frame(width: geo.size.width, height: geo.size.height)
+                } else {
+                    stageContent(chrome: false)
+                        .frame(width: geo.size.height, height: geo.size.width)
+                        .rotationEffect(.degrees(90))
+                        .frame(width: geo.size.width, height: geo.size.height)
+                }
+            }
+            .ignoresSafeArea()
+        }
+        // Tapping the Dynamic Island region (top-center) reveals/hides the
+        // close button — keeps the rest of the screen free for the
+        // component's own gestures.
+        .overlay(alignment: .top) {
+            Color.clear
+                .frame(width: 220, height: 64)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    withAnimation(.easeInOut(duration: 0.2)) { showFullScreenClose.toggle() }
+                }
+                .accessibilityLabel("Toggle close button")
+        }
+        .overlay(alignment: .topTrailing) {
+            if showFullScreenClose {
+                Button { fullScreen = false } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .frame(width: 44, height: 44)
+                        .background(Circle().fill(.black.opacity(0.4)))
+                        .contentShape(Circle())
+                }
+                .buttonStyle(.plain)
+                .padding(20)
+                .accessibilityLabel("Close full screen")
+                .transition(.opacity)
+            }
+        }
+        .statusBarHidden(true)
+    }
+
     @ViewBuilder
-    private var stageContent: some View {
+    private func stageContent(chrome: Bool = true) -> some View {
         let sheet = item.specSheet
         switch item {
         case .searchPillRest:
@@ -279,49 +354,59 @@ private struct ComponentStudioStage: View {
             GlassPillView(specs: specs)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 
+        case .talkPill:
+            let specs = TalkPillSpecs(specState, sheet: sheet!)
+            TalkPillView(specs: specs)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+
         case .photoRipple:
             let specs = PhotoRippleSpecs(specState, sheet: sheet!)
-            PhotoRippleView(specs: specs)
+            PhotoRippleView(specs: specs, chrome: chrome)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 
         case .photoRipple2:
             let specs = PhotoRipple2Specs(specState, sheet: sheet!)
-            PhotoRipple2View(specs: specs)
+            PhotoRipple2View(specs: specs, chrome: chrome)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 
         case .refractiveText:
             let specs = BubbleTextRippleSpecs(specState, sheet: sheet!)
-            BubbleTextRippleView(title: item.title, content: .text, specs: specs)
+            BubbleTextRippleView(title: item.title, content: .text, specs: specs, chrome: chrome)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 
         case .bubbleTextRipple:
             let specs = BubbleTextRippleSpecs(specState, sheet: sheet!)
-            BubbleTextRippleView(title: item.title, content: .sphere, specs: specs)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-        case .sphericMesh:
-            let specs = SphericMeshSpecs(specState, sheet: sheet!)
-            SphericMeshView(specs: specs)
+            BubbleTextRippleView(title: item.title, content: .sphere, specs: specs, chrome: chrome)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 
         case .dottedBackground:
             let specs = DottedBackgroundSpecs(specState, sheet: sheet!)
-            DottedBackgroundView(specs: specs)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-        case .glassEffectShader:
-            let specs = GlassEffectShaderSpecs(specState, sheet: sheet!)
-            GlassEffectShaderView(specs: specs)
+            DottedBackgroundView(specs: specs, chrome: chrome)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 
         case .neumorphicDigit:
             let specs = NeumorphicDigitSpecs(specState, sheet: sheet!)
-            NeumorphicDigitView(specs: specs)
+            NeumorphicDigitView(specs: specs, chrome: chrome)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-        case .interactiveTiles:
-            let specs = InteractiveTilesSpecs(specState, sheet: sheet!)
-            InteractiveTilesView(specs: specs)
+        case .neumorphicPills:
+            let specs = NeumorphicPillsSpecs(specState, sheet: sheet!)
+            NeumorphicPillsView(specs: specs, chrome: chrome)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+        case .flameInGlass:
+            let specs = FlameInGlassSpecs(specState, sheet: sheet!)
+            FlameInGlassView(chrome: chrome, specs: specs)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+        case .flame:
+            let specs = FlameSpecs(specState, sheet: sheet!)
+            FlameView(chrome: chrome, specs: specs)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+        case .sdfLiquid:
+            let specs = SDFLiquidSpecs(specState, sheet: sheet!)
+            SDFLiquidView(specs: specs, chrome: chrome)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
@@ -346,11 +431,11 @@ struct StudioCategory: Identifiable {
 private enum StudioCatalog {
     private static let categoryDefinitions: [(id: String, title: String, items: [StudioItem])] = [
         (id: "shaders", title: "Shaders", items: [
-            .interactiveTiles, .dottedBackground, .neumorphicDigit, .photoRipple2,
-            .photoRipple, .refractiveText, .bubbleTextRipple, .sphericMesh, .glassEffectShader,
+            .flame, .flameInGlass, .neumorphicPills, .dottedBackground, .neumorphicDigit, .photoRipple2,
+            .photoRipple, .refractiveText, .bubbleTextRipple,
         ]),
         (id: "cards", title: "Cards", items: [.bubbleCard]),
-        (id: "pills", title: "Pills", items: [.sampleGlassPill]),
+        (id: "pills", title: "Pills", items: [.sampleGlassPill, .talkPill]),
         (id: "loading", title: "Loading", items: [.blurFocusLoading]),
         (id: "scroll", title: "Scroll", items: [.verticalCardDeck]),
         (id: "search", title: "Search", items: [.searchPillRest]),
@@ -379,34 +464,48 @@ enum StudioItem: Hashable {
     case bubbleCard
     case verticalCardDeck
     case sampleGlassPill
+    case talkPill
     case photoRipple
     case photoRipple2
     case refractiveText
     case bubbleTextRipple
-    case sphericMesh
     case dottedBackground
-    case glassEffectShader
     case neumorphicDigit
-    case interactiveTiles
+    case neumorphicPills
+    case flameInGlass
+    case flame
+    case sdfLiquid
 
     /// Bump this timestamp whenever the component (view, specs, or sample data) changes.
     /// The catalog sorts items and sections by this date, newest first.
     var lastUpdated: Date {
         switch self {
-        case .interactiveTiles: return studioCatalogDate(2026, 6, 27, 17, 0)
-        case .refractiveText: return studioCatalogDate(2026, 6, 27, 16, 30)
-        case .dottedBackground: return studioCatalogDate(2026, 6, 27, 16, 0)
-        case .neumorphicDigit: return studioCatalogDate(2026, 6, 27, 15, 0)
+        case .sdfLiquid: return studioCatalogDate(2026, 6, 28, 17, 0)
+        case .flameInGlass: return studioCatalogDate(2026, 6, 28, 22, 15)
+        case .flame: return studioCatalogDate(2026, 7, 7, 14, 40)
+        case .refractiveText: return studioCatalogDate(2026, 6, 28, 1, 30)
+        case .bubbleTextRipple: return studioCatalogDate(2026, 6, 28, 1, 30)
+        case .dottedBackground: return studioCatalogDate(2026, 6, 27, 23, 30)
+        case .neumorphicDigit: return studioCatalogDate(2026, 6, 28, 1, 30)
+        case .neumorphicPills: return studioCatalogDate(2026, 6, 28, 23, 15)
         case .photoRipple2: return studioCatalogDate(2026, 6, 27, 14, 0)
         case .photoRipple: return studioCatalogDate(2026, 6, 27, 13, 0)
-        case .bubbleTextRipple: return studioCatalogDate(2026, 6, 27, 19, 0)
-        case .sphericMesh: return studioCatalogDate(2026, 6, 27, 11, 0)
-        case .glassEffectShader: return studioCatalogDate(2026, 6, 27, 10, 0)
         case .bubbleCard: return studioCatalogDate(2026, 6, 26, 21, 11, 28)
-        case .sampleGlassPill: return studioCatalogDate(2026, 6, 26, 21, 11, 25)
+        case .sampleGlassPill: return studioCatalogDate(2026, 6, 28, 12, 35, 0)
+        case .talkPill: return studioCatalogDate(2026, 8, 13, 20, 42)
         case .blurFocusLoading: return studioCatalogDate(2026, 6, 26, 21, 4, 5)
         case .verticalCardDeck: return studioCatalogDate(2026, 6, 26, 21, 1, 47)
         case .searchPillRest: return studioCatalogDate(2026, 6, 26, 21, 1, 34)
+        }
+    }
+
+    /// Full-screen layout: most shaders render landscape (rotated). A few
+    /// read their own pixel size to build a grid and would distort when laid
+    /// out landscape-then-rotated, so they fill the device at native size.
+    var fullScreenFillsDevice: Bool {
+        switch self {
+        case .dottedBackground: return true
+        default: return false
         }
     }
 
@@ -417,15 +516,17 @@ enum StudioItem: Hashable {
         case .bubbleCard: return "Satelite Cards"
         case .verticalCardDeck: return "Vertical card deck"
         case .sampleGlassPill: return "Glass Pill"
+        case .talkPill: return "Talk Pill"
         case .photoRipple: return "Liquid Photo"
         case .photoRipple2: return "Photo Ripple"
         case .refractiveText: return "Refractive Text"
         case .bubbleTextRipple: return "Refractive Sphere"
-        case .sphericMesh: return "Spheric Mesh"
         case .dottedBackground: return "Dotted Background"
-        case .glassEffectShader: return "Glass Effect"
-        case .neumorphicDigit: return "Neumorphic Digit"
-        case .interactiveTiles: return "Interactive Tiles"
+        case .neumorphicDigit: return "Neumorphic Icons"
+        case .neumorphicPills: return "Neumorphic Pills"
+        case .flameInGlass: return "Flame in Glass"
+        case .flame: return "Flame"
+        case .sdfLiquid: return "Liquid Blobs"
         }
     }
 
@@ -436,8 +537,8 @@ enum StudioItem: Hashable {
     /// back button + breadcrumb. For these the system nav bar is hidden.
     var usesShaderChrome: Bool {
         switch self {
-        case .interactiveTiles, .dottedBackground, .neumorphicDigit, .photoRipple2,
-             .photoRipple, .refractiveText, .bubbleTextRipple, .sphericMesh, .glassEffectShader:
+        case .dottedBackground, .neumorphicDigit, .neumorphicPills, .flameInGlass, .flame, .sdfLiquid, .photoRipple2,
+             .photoRipple, .refractiveText, .bubbleTextRipple:
             return true
         default:
             return false
@@ -447,8 +548,8 @@ enum StudioItem: Hashable {
     var maxWidth: CGFloat? {
         switch self {
         case .bubbleCard, .verticalCardDeck, .blurFocusLoading,
-             .photoRipple, .photoRipple2, .refractiveText, .bubbleTextRipple, .sphericMesh, .dottedBackground, .glassEffectShader,
-             .neumorphicDigit, .interactiveTiles:
+             .photoRipple, .photoRipple2, .refractiveText, .bubbleTextRipple, .dottedBackground,
+             .neumorphicDigit, .neumorphicPills, .flameInGlass, .flame, .sdfLiquid:
             return .infinity
         default:
             return .infinity
@@ -458,70 +559,18 @@ enum StudioItem: Hashable {
     var horizontalPadding: CGFloat {
         switch self {
         case .bubbleCard, .verticalCardDeck, .blurFocusLoading,
-             .photoRipple, .photoRipple2, .refractiveText, .bubbleTextRipple, .sphericMesh, .dottedBackground, .glassEffectShader,
-             .neumorphicDigit, .interactiveTiles:
+             .photoRipple, .photoRipple2, .refractiveText, .bubbleTextRipple, .dottedBackground,
+             .neumorphicDigit, .neumorphicPills, .flameInGlass, .flame, .sdfLiquid:
             return 0
         case .searchPillRest:
             return StudioLayout.horizontalPadding
-        case .sampleGlassPill:
+        case .sampleGlassPill, .talkPill:
             return 0
         }
     }
 }
 
-// MARK: - Sample component (placeholder)
-
-private struct SampleGlassPill: View {
-    var specs: SampleGlassPillSpecs = SampleGlassPillSpecs(
-        ComponentSpecState(defaults: StudioItem.sampleGlassPill.specDefaults),
-        sheet: StudioItem.sampleGlassPill.specSheet!
-    )
-
-    var body: some View {
-        Text("Liquid Glass")
-            .font(.system(.body, design: .rounded).weight(.medium))
-            .padding(.horizontal, Theme.Spacing.lg)
-            .padding(.vertical, Theme.Spacing.sm)
-            .scaleEffect(specs.restScale)
-            .glassEffect(
-                specs.tintOpacity > 0.01
-                    ? .regular.interactive().tint(.white.opacity(specs.tintOpacity))
-                    : .regular.interactive(),
-                in: Capsule()
-            )
-    }
-}
-
-/// Glass Pill stage with a dark-mode toggle so the Liquid Glass pill can be
-/// previewed on both light and dark backgrounds.
-private struct GlassPillView: View {
-    let specs: SampleGlassPillSpecs
-    @State private var darkMode = false
-
-    var body: some View {
-        ZStack {
-            (darkMode ? Color.black : Aurora.canvas)
-                .ignoresSafeArea()
-
-            VStack(spacing: 28) {
-                SampleGlassPill(specs: specs)
-
-                HStack(spacing: 12) {
-                    Image(systemName: darkMode ? "moon.fill" : "sun.max.fill")
-                        .font(.system(size: 13, weight: .semibold))
-                    Text("Dark Mode")
-                        .font(.system(.subheadline, design: .rounded).weight(.medium))
-                    Toggle("Dark Mode", isOn: $darkMode.animation(.easeInOut(duration: 0.25)))
-                        .labelsHidden()
-                        .tint(darkMode ? Color.white.opacity(0.85) : Aurora.ink.opacity(0.85))
-                }
-                .foregroundStyle(darkMode ? Color.white : Aurora.ink)
-            }
-            .padding(Theme.Spacing.xl)
-        }
-        .environment(\.colorScheme, darkMode ? .dark : .light)
-    }
-}
+// MARK: - Helpers
 
 private func studioCatalogDate(
     _ year: Int,
@@ -543,11 +592,4 @@ private func studioCatalogDate(
 
 #Preview("Studio") {
     ComponentStudioView()
-}
-
-#Preview("Glass Pill") {
-    ZStack {
-        Color(.systemBackground).ignoresSafeArea()
-        SampleGlassPill()
-    }
 }

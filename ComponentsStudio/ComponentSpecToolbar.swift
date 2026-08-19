@@ -13,6 +13,8 @@ struct ComponentSpecControl: Identifiable {
     enum Kind: Equatable {
         case slider(ClosedRange<Double>, format: String)
         case toggle
+        /// Color picker — backed by three value keys: `id`+"R"/"G"/"B".
+        case color
     }
 
     let id: String
@@ -89,9 +91,12 @@ final class ComponentSpecState {
     }
 
     func applyPreset(_ preset: StudioComponentPreset, sheet: ComponentSpecSheet) {
-        for (key, defaultValue) in sheet.defaults {
-            values[key] = preset.values[key] ?? defaultValue
+        var next = sheet.defaults
+        for (key, _) in sheet.defaults {
+            guard let raw = preset.values[key], raw.isFinite else { continue }
+            next[key] = raw
         }
+        values = next
     }
 
     func resetToDefaults(sheet: ComponentSpecSheet) {
@@ -159,7 +164,9 @@ enum StudioLayout {
     static let horizontalPadding: CGFloat = 24
 
     /// Drop shadow opacity for floating action buttons (FABs).
-    static let fabShadowOpacity: Double = 0.10
+    static let fabShadowOpacity: Double = 0.05
+    /// Stroke (rim) opacity for floating action buttons (FABs).
+    static let fabStrokeOpacity: Double = 0.05
 }
 
 // MARK: - Shared Liquid Glass surfaces
@@ -192,6 +199,7 @@ struct SpecToolboxPillBg: View {
 struct StudioCircleFAB: View {
     let symbol: String
     let isActive: Bool
+    var glyphColor: Color = Aurora.iconInk
     let accessibilityLabel: String
     let action: () -> Void
 
@@ -201,15 +209,20 @@ struct StudioCircleFAB: View {
         Button(action: action) {
             Image(systemName: symbol)
                 .font(.system(size: 17, weight: .medium))
-                .foregroundStyle(isActive ? Color.white : Aurora.iconInk)
+                .foregroundStyle(isActive ? Color.white : glyphColor)
                 .frame(width: 44, height: 44)
                 .background {
                     let shape = Circle()
                     if isActive {
                         shape.fill(Color.black.opacity(0.85))
                     } else {
-                        shape.fill(.clear).glassEffect(.regular.interactive(), in: shape)
+                        // `.clear` (not `.regular`) — more transparent liquid
+                        // glass with no defined rim/border.
+                        shape.fill(.clear).glassEffect(.clear.interactive(), in: shape)
                     }
+                }
+                .overlay {
+                    Circle().strokeBorder(Aurora.ink.opacity(StudioLayout.fabStrokeOpacity), lineWidth: 1)
                 }
                 .contentShape(Circle())
                 .shadow(color: .black.opacity(StudioLayout.fabShadowOpacity), radius: 6, x: 0, y: 3)
@@ -224,6 +237,7 @@ struct StudioCircleFAB: View {
 
 struct StudioPresetChipRow: View {
     let defaultPreset: StudioComponentPreset
+    let builtInPresets: [StudioComponentPreset]
     let pinnedPresets: [StudioComponentPreset]
     @Binding var selectedID: String
     @Binding var isExpanded: Bool
@@ -244,7 +258,12 @@ struct StudioPresetChipRow: View {
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 4) {
-                chip(for: defaultPreset, isDefault: true)
+                ForEach(builtInPresets) { preset in
+                    chip(
+                        for: preset,
+                        isDefault: preset.id == defaultPreset.id
+                    )
+                }
                 ForEach(pinnedPresets) { preset in
                     chip(for: preset, isDefault: false)
                 }
@@ -320,9 +339,9 @@ struct StudioPresetChipRow: View {
         .onTapGesture(count: 1) {
             withAnimation(presetSwitchAnim) {
                 selectedID = preset.id
-                onSelect(preset)
                 showCode = false
             }
+            onSelect(preset)
         }
         .onLongPressGesture(minimumDuration: 0.45) {
             guard isDefault, defaultIsModified else { return }
@@ -341,6 +360,7 @@ struct StudioPresetChipRow: View {
 
 struct StudioPresetControlBar: View {
     let defaultPreset: StudioComponentPreset
+    let builtInPresets: [StudioComponentPreset]
     let pinnedPresets: [StudioComponentPreset]
     let sheet: ComponentSpecSheet
     @Bindable var state: ComponentSpecState
@@ -375,6 +395,7 @@ struct StudioPresetControlBar: View {
 
             StudioPresetChipRow(
                 defaultPreset: defaultPreset,
+                builtInPresets: builtInPresets,
                 pinnedPresets: pinnedPresets,
                 selectedID: $selectedPresetID,
                 isExpanded: $isExpanded,
@@ -528,7 +549,37 @@ struct StudioPresetControlBar: View {
                 .foregroundStyle(Aurora.ink.opacity(0.70))
                 .frame(width: 50, alignment: .trailing)
             }
+
+        case .color:
+            HStack(spacing: 8) {
+                paramLabel(control.label)
+                Spacer(minLength: 0)
+                ColorPicker("", selection: colorBinding(control.id), supportsOpacity: false)
+                    .labelsHidden()
+            }
         }
+    }
+
+    /// Binds a `.color` control's `id`+"R"/"G"/"B" value keys to a `Color`.
+    private func colorBinding(_ prefix: String) -> Binding<Color> {
+        Binding(
+            get: {
+                Color(
+                    red: state.double("\(prefix)R", default: 1),
+                    green: state.double("\(prefix)G", default: 1),
+                    blue: state.double("\(prefix)B", default: 1)
+                )
+            },
+            set: { newColor in
+                #if canImport(UIKit)
+                var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+                UIColor(newColor).getRed(&r, green: &g, blue: &b, alpha: &a)
+                state.values["\(prefix)R"] = Double(r)
+                state.values["\(prefix)G"] = Double(g)
+                state.values["\(prefix)B"] = Double(b)
+                #endif
+            }
+        )
     }
 
     @ViewBuilder
@@ -610,8 +661,12 @@ struct UnifiedStudioStage<Content: View>: View {
         )
     }
 
+    private var builtInPresets: [StudioComponentPreset] {
+        item.presets.isEmpty ? [defaultPreset] : item.presets
+    }
+
     private var allPresets: [StudioComponentPreset] {
-        [defaultPreset] + pinnedPresets
+        builtInPresets + pinnedPresets
     }
 
     private let toolboxMorphAnim: Animation =
@@ -645,6 +700,7 @@ struct UnifiedStudioStage<Content: View>: View {
                         if controlBarExpanded || showCode {
                             StudioPresetControlBar(
                                 defaultPreset: defaultPreset,
+                                builtInPresets: builtInPresets,
                                 pinnedPresets: pinnedPresets,
                                 sheet: sheet,
                                 state: state,
@@ -664,9 +720,20 @@ struct UnifiedStudioStage<Content: View>: View {
                             .transition(.opacity.combined(with: .move(edge: .bottom)))
                         }
                         HStack(spacing: 12) {
-                            Spacer()
-                            customizeFAB
-                            toolsFAB
+                            // Quick-access preset pills beside the FABs while
+                            // the full panel is closed — tap to apply instantly.
+                            // Only Dotted Background opts into this row.
+                            if item == .dottedBackground && !(controlBarExpanded || showCode) {
+                                quickPresetPills
+                            } else {
+                                Spacer()
+                            }
+                            // Dotted Background shows only the quick pills — no
+                            // customize / tools FABs.
+                            if item != .dottedBackground {
+                                customizeFAB
+                                toolsFAB
+                            }
                         }
                     }
                     .padding(.horizontal, StudioLayout.horizontalPadding)
@@ -696,10 +763,56 @@ struct UnifiedStudioStage<Content: View>: View {
         return 80
     }
 
+    /// Always-visible horizontal pill row (built-in + pinned presets) to
+    /// the left of the FABs. Tapping a pill applies that preset instantly
+    /// without opening the customize panel.
+    private var quickPresetPills: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 6) {
+                ForEach(allPresets) { preset in
+                    let isSelected = selectedPresetID == preset.id
+                    Text(preset.label)
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(isSelected ? Aurora.ink : Aurora.ink.opacity(0.62))
+                        .lineLimit(1)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 9)
+                        .background {
+                            if isSelected {
+                                SpecToolboxPillBg()
+                            } else {
+                                SpecToolboxPillBg().opacity(0.5)
+                            }
+                        }
+                        .contentShape(Capsule())
+                        .onTapGesture {
+                            withAnimation(toolboxMorphAnim) {
+                                selectedPresetID = preset.id
+                                state.applyPreset(preset, sheet: sheet)
+                            }
+                            #if canImport(UIKit)
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                            #endif
+                        }
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel("Preset \(preset.label)")
+                        .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
+                }
+            }
+            .padding(.vertical, 2)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var fabGlyphColor: Color {
+        item.prefersDarkStageChrome ? Color.white.opacity(0.92) : Aurora.iconInk
+    }
+
     private var toolsFAB: some View {
         StudioCircleFAB(
             symbol: "wrench.and.screwdriver.fill",
             isActive: showCode,
+            glyphColor: fabGlyphColor,
             accessibilityLabel: showCode ? "Close generated code" : "Open generated code"
         ) {
             if showCode {
@@ -719,6 +832,7 @@ struct UnifiedStudioStage<Content: View>: View {
         return StudioCircleFAB(
             symbol: "slider.horizontal.3",
             isActive: isActive,
+            glyphColor: fabGlyphColor,
             accessibilityLabel: isActive ? "Close customize panel" : "Open customize panel"
         ) {
             withAnimation(toolboxMorphAnim) {

@@ -60,8 +60,14 @@ struct PhotoRipple2View: View {
         ComponentSpecState(defaults: StudioItem.photoRipple2.specDefaults),
         sheet: StudioItem.photoRipple2.specSheet!
     )
+    /// When false, renders only the card content (no page chrome) so an
+    /// Xcode preview can show the component full-bleed — the card corner
+    /// rounding also drops to 0 so the photo fills the whole frame.
+    var chrome: Bool = true
 
-    private let cardShape = RoundedRectangle(cornerRadius: Theme.Radius.card, style: .continuous)
+    private var cardShape: RoundedRectangle {
+        RoundedRectangle(cornerRadius: chrome ? Theme.Radius.card : 0, style: .continuous)
+    }
 
     private struct ActiveRipple: Identifiable {
         let id = UUID()
@@ -77,21 +83,28 @@ struct PhotoRipple2View: View {
     private let emitInterval: TimeInterval = 0.07
 
     var body: some View {
-        ShaderPageLayout(title: title, aspectRatio: 1 / Cloud.bubbleAspect) {
-            TimelineView(.animation) { timeline in
-                let now = timeline.date.timeIntervalSinceReferenceDate
+        if chrome {
+            ShaderPageLayout(title: title, aspectRatio: 1 / Cloud.bubbleAspect) { cardBody }
+        } else {
+            cardBody
+        }
+    }
 
-                GeometryReader { geo in
-                    let size = geo.size
+    @ViewBuilder
+    private var cardBody: some View {
+        TimelineView(.animation) { timeline in
+            let now = timeline.date.timeIntervalSinceReferenceDate
 
-                    rippled(now: now, size: size)
-                        .contentShape(cardShape)
-                        .gesture(
-                            DragGesture(minimumDistance: 0)
-                                .onChanged { value in emit(at: value.location) }
-                                .onEnded { _ in lastEmitPoint = nil }
-                        )
-                }
+            GeometryReader { geo in
+                let size = geo.size
+
+                rippled(now: now, size: size)
+                    .contentShape(cardShape)
+                    .gesture(
+                        DragGesture(minimumDistance: 0)
+                            .onChanged { value in emit(at: value.location) }
+                            .onEnded { _ in lastEmitPoint = nil }
+                    )
             }
         }
     }
@@ -166,4 +179,10 @@ struct PhotoRipple2View: View {
         Aurora.canvas.ignoresSafeArea()
         PhotoRipple2View()
     }
+}
+
+// Card-only: just the component, full-bleed, on its own background.
+#Preview("Photo Ripple · card", traits: .sizeThatFitsLayout) {
+    PhotoRipple2View(chrome: false)
+        .frame(width: 430, height: 430)
 }
