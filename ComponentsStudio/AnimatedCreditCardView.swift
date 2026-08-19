@@ -243,36 +243,36 @@ private struct CreditCardParticles: View {
         let age = CreditCardParticleSpecs.age(for: index, at: time)
         let life = (CreditCardParticleSpecs.duration - age)
             / CreditCardParticleSpecs.duration
-        let origin = CreditCardPerimeter.pointAndNormal(
-            size: size,
-            cornerRadius: CreditCardMetrics.cornerRadius,
-            fraction: CreditCardParticleSpecs.random(index, salt: 1)
+        let origin = CreditCardParticleSpecs.origin(
+            for: index,
+            size: size
         )
         let spread = CreditCardParticleSpecs.signedRandom(index, salt: 2)
             * CreditCardParticleSpecs.spread
-        let direction = Double(
-            atan2(-origin.normal.dy, origin.normal.dx)
-        ) + spread
+        let direction = Double.pi / 2 + spread
         let speed = CreditCardParticleSpecs.speed(for: index)
         let diameter = CreditCardParticleSpecs.diameter(for: index)
+        let opacity = CreditCardParticleSpecs.opacity(for: index)
         let colorIndex = Int(
             CreditCardParticleSpecs.random(index, salt: 5)
-                * Double(CreditCardPalette.aiStops.count)
-        ) % CreditCardPalette.aiStops.count
+                * Double(CreditCardPalette.particleColors.count)
+        ) % CreditCardPalette.particleColors.count
+        let color = CreditCardPalette.particleColors[colorIndex]
 
         return Circle()
-            .fill(CreditCardPalette.aiStops[colorIndex])
+            .fill(color)
             .frame(width: diameter, height: diameter)
             .scaleEffect(life)
-            .opacity(life)
+            .opacity(life * opacity)
             .modifier(
                 CreditCardParticleMotion(
                     time: age,
-                    origin: origin.point,
+                    origin: origin,
                     speed: speed,
                     angle: direction
                 )
             )
+            .shadow(color: color.opacity(0.42), radius: diameter)
             .blendMode(.plusLighter)
     }
 }
@@ -300,114 +300,6 @@ private struct CreditCardParticleMotion: GeometryEffect {
     }
 }
 
-private enum CreditCardPerimeter {
-    struct Sample {
-        let point: CGPoint
-        let normal: CGVector
-    }
-
-    static func pointAndNormal(
-        size: CGSize,
-        cornerRadius: CGFloat,
-        fraction: Double
-    ) -> Sample {
-        let halfWidth = size.width / 2
-        let halfHeight = size.height / 2
-        let radius = min(cornerRadius, halfHeight)
-        guard size.width > 0, size.height > 0, radius > 0 else {
-            return Sample(
-                point: .zero,
-                normal: CGVector(dx: 0, dy: -1)
-            )
-        }
-        let horizontal = size.width - 2 * radius
-        let vertical = size.height - 2 * radius
-        let arc = .pi * radius / 2
-        let perimeter = 2 * horizontal + 2 * vertical + 4 * arc
-        var distance = CGFloat(fraction) * perimeter
-
-        if distance < horizontal {
-            return Sample(
-                point: CGPoint(x: -halfWidth + radius + distance, y: -halfHeight),
-                normal: CGVector(dx: 0, dy: -1)
-            )
-        }
-        distance -= horizontal
-
-        if distance < arc {
-            return arcSample(
-                center: CGPoint(x: halfWidth - radius, y: -halfHeight + radius),
-                radius: radius,
-                angle: -.pi / 2 + distance / radius
-            )
-        }
-        distance -= arc
-
-        if distance < vertical {
-            return Sample(
-                point: CGPoint(x: halfWidth, y: -halfHeight + radius + distance),
-                normal: CGVector(dx: 1, dy: 0)
-            )
-        }
-        distance -= vertical
-
-        if distance < arc {
-            return arcSample(
-                center: CGPoint(x: halfWidth - radius, y: halfHeight - radius),
-                radius: radius,
-                angle: distance / radius
-            )
-        }
-        distance -= arc
-
-        if distance < horizontal {
-            return Sample(
-                point: CGPoint(x: halfWidth - radius - distance, y: halfHeight),
-                normal: CGVector(dx: 0, dy: 1)
-            )
-        }
-        distance -= horizontal
-
-        if distance < arc {
-            return arcSample(
-                center: CGPoint(x: -halfWidth + radius, y: halfHeight - radius),
-                radius: radius,
-                angle: .pi / 2 + distance / radius
-            )
-        }
-        distance -= arc
-
-        if distance < vertical {
-            return Sample(
-                point: CGPoint(x: -halfWidth, y: halfHeight - radius - distance),
-                normal: CGVector(dx: -1, dy: 0)
-            )
-        }
-        distance -= vertical
-
-        return arcSample(
-            center: CGPoint(x: -halfWidth + radius, y: -halfHeight + radius),
-            radius: radius,
-            angle: .pi + distance / radius
-        )
-    }
-
-    private static func arcSample(
-        center: CGPoint,
-        radius: CGFloat,
-        angle: CGFloat
-    ) -> Sample {
-        let normal = CGVector(dx: cos(angle), dy: sin(angle))
-        return Sample(
-            point: CGPoint(
-                x: center.x + radius * normal.dx,
-                y: center.y + radius * normal.dy
-            ),
-            normal: normal
-        )
-    }
-}
-
 private enum CreditCardMotion {
     // These are the AI Search pill's at-rest values.
     static let period: Double = 4.2
@@ -423,17 +315,24 @@ private enum CreditCardMotion {
 }
 
 private enum CreditCardParticleSpecs {
-    // Values retained from the supplied ParticleEffectView.swift.
-    static let count = 150
+    // Motion values retained from the supplied ParticleEffectView.swift.
+    // The screenshot's sparse field needs far fewer simultaneous emitters
+    // than the source sample's 150-particle demonstration.
+    static let count = 24
     static let duration: Double = 2
     static let minimumSpeed: Double = 40
     static let maximumSpeed: Double = 80
     static let gravity: Double = 15 * 9.81
 
-    // The button emitter is adapted to the card perimeter.
-    static let spread: Double = .pi * 0.24
-    static let minimumDiameter: Double = 1.5
-    static let maximumDiameter: Double = 4
+    // The reference clusters tiny motes in the middle 64% above the button.
+    static let horizontalStart: Double = 0.18
+    static let horizontalSpan: Double = 0.64
+    static let verticalJitter: Double = 8
+    static let spread: Double = .pi * 0.18
+    static let minimumDiameter: Double = 0.8
+    static let maximumDiameter: Double = 2.2
+    static let minimumOpacity: Double = 0.16
+    static let maximumOpacity: Double = 0.48
 
     static func age(for index: Int, at time: Double) -> Double {
         let delay = random(index, salt: 3) * duration
@@ -448,6 +347,21 @@ private enum CreditCardParticleSpecs {
         CGFloat(
             minimumDiameter
                 + random(index, salt: 6) * (maximumDiameter - minimumDiameter)
+        )
+    }
+
+    static func opacity(for index: Int) -> Double {
+        minimumOpacity
+            + random(index, salt: 7) * (maximumOpacity - minimumOpacity)
+    }
+
+    static func origin(for index: Int, size: CGSize) -> CGPoint {
+        let horizontalFraction = horizontalStart
+            + random(index, salt: 1) * horizontalSpan
+        return CGPoint(
+            x: (horizontalFraction - 0.5) * size.width,
+            y: -size.height / 2
+                - CGFloat(random(index, salt: 8) * verticalJitter)
         )
     }
 
@@ -498,6 +412,11 @@ private enum CreditCardPalette {
         .init(color: aiStops[1], location: 0.14),
         .init(color: aiStops[1].opacity(0), location: 0.30),
         .init(color: .clear, location: 1.00),
+    ]
+    static let particleColors: [Color] = [
+        .white,
+        aiStops[0],
+        aiStops[1],
     ]
 
     static let body = LinearGradient(
