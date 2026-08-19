@@ -21,8 +21,9 @@ struct ComponentStudioView: View {
                 Section("Chrome · Liquid Glass") {
                     studioLink(.sampleGlassPill)
                 }
-                // Add more sections as components arrive:
-                // Section("Cards") { … }
+                Section("Cards · Motion") {
+                    studioLink(.animatedCreditCard)
+                }
                 // Section("Motion") { … }
             }
             .navigationTitle("Components Studio")
@@ -69,6 +70,8 @@ private struct ComponentStudioStage: View {
         switch item {
         case .sampleGlassPill:
             SampleGlassPill()
+        case .animatedCreditCard:
+            AnimatedCreditCardView()
         }
     }
 
@@ -83,10 +86,12 @@ private struct ComponentStudioStage: View {
 
 enum StudioItem: Hashable {
     case sampleGlassPill
+    case animatedCreditCard
 
     var title: String {
         switch self {
         case .sampleGlassPill: return "Sample · glass pill"
+        case .animatedCreditCard: return "AI snake · credit card"
         }
     }
 }
