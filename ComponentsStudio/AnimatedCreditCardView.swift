@@ -235,7 +235,6 @@ private struct CreditCardParticles: View {
             }
         }
         .frame(width: size.width, height: size.height)
-        .drawingGroup()
         .allowsHitTesting(false)
         .accessibilityHidden(true)
     }
@@ -315,6 +314,12 @@ private enum CreditCardPerimeter {
         let halfWidth = size.width / 2
         let halfHeight = size.height / 2
         let radius = min(cornerRadius, halfHeight)
+        guard size.width > 0, size.height > 0, radius > 0 else {
+            return Sample(
+                point: .zero,
+                normal: CGVector(dx: 0, dy: -1)
+            )
+        }
         let horizontal = size.width - 2 * radius
         let vertical = size.height - 2 * radius
         let arc = .pi * radius / 2
