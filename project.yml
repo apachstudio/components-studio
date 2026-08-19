@@ -26,7 +26,13 @@ targets:
     deploymentTarget: "26.0"
     sources:
       - path: ComponentsStudio
+    info:
+      path: ComponentsStudio/Info.plist
+      properties:
+        UIAppFonts:
+          - Dripdrop.otf
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: studio.apach.ComponentsStudio
         TARGETED_DEVICE_FAMILY: "1,2"
+        INFOPLIST_KEY_CFBundleDisplayName: APACH
