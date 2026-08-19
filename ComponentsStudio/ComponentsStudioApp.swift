@@ -4,6 +4,10 @@ import SwiftUI
 /// no app shell or routing — the whole product is the studio itself.
 @main
 struct ComponentsStudioApp: App {
+    init() {
+        BundledFontRegistration.registerAll()
+    }
+
     var body: some Scene {
         WindowGroup {
             ComponentStudioView()

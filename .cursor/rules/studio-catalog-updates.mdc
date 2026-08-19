@@ -1,0 +1,26 @@
+---
+description: Bump StudioItem.lastUpdated when editing component studio items so the catalog stays sorted newest-first.
+globs: ComponentsStudio/**/*.swift
+alwaysApply: false
+---
+
+# Component Studio catalog sort
+
+The home catalog sorts **sections** and **items within each section** by `StudioItem.lastUpdated` (newest first). Timestamps live in the `lastUpdated` switch on `StudioItem` in `ComponentStudioView.swift`.
+
+## Required on every component change
+
+When you add or modify anything tied to a `StudioItem` — its view, specs/presets in `StudioItemSpecs.swift`, sample data, or stage wiring — **update that item's `lastUpdated` date** to the current date/time (use `studioCatalogDate(year, month, day, hour, minute)`).
+
+Examples of files that trigger a bump:
+- `ComponentsStudio/Components/*.swift`
+- `ComponentsStudio/StudioItemSpecs.swift` (per-item preset/spec changes)
+- `ComponentsStudio/StudioSampleData.swift` (when sample data for a specific item changes)
+- `ComponentsStudio/ComponentStudioView.swift` (stage wiring for an item)
+
+Do **not** bump unrelated items. Do **not** manually reorder arrays in `StudioCatalog.categoryDefinitions` — sort is derived from timestamps.
+
+## Adding a new component
+
+1. Add the `StudioItem` case and register it in `StudioCatalog.categoryDefinitions`.
+2. Set `lastUpdated` to today's date in the `lastUpdated` switch (new items should appear at the top of their section and may lift the whole section).

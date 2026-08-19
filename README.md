@@ -1,13 +1,13 @@
 # Components Studio
 
-A standalone Xcode project — a clean, white-canvas sandbox for building and
-recording **iOS 26+ Liquid Glass** components. No app shell, no models, no
-backend: each component renders on the same neutral stage so you can iterate
-on visuals and motion in isolation.
+A standalone Xcode app — the **SwiftUI Components Studio** catalog for building,
+tweaking, and recording **iOS 26+ Liquid Glass** components. Each item opens on
+a stage with pin-based presets and a unified spec toolbar so you can iterate on
+visuals and motion in isolation.
 
-This is the spiritual sibling of the `ComponentStudioView` from the
-[Places](https://github.com/andreappubli-svg/bubble-cloud) project, lifted out
-and stripped of anything Aurora- or Places-specific.
+This is the sibling of `ComponentStudioView` from
+[bubble-cloud](https://github.com/apachstudio/bubble-cloud), expanded into its
+own catalog (shaders, cards, pills, loading, scroll, search).
 
 ---
 
@@ -31,13 +31,42 @@ Re-run `xcodegen generate` whenever you add or rename source files.
 
 ```
 ComponentsStudio/
-├── ComponentsStudioApp.swift   @main entry; pins light scheme
-├── Theme.swift                 Geometric tokens (radii, spacing) — no colors
-└── ComponentStudioView.swift   Navigation shell + Stage + recording mode
+├── ComponentsStudioApp.swift    @main entry
+├── ComponentStudioView.swift    Catalog + stage + StudioItem registry
+├── ComponentSpecToolbar.swift   Unified pin / preset toolbar
+├── StudioItemSpecs.swift        Per-item controls and presets
+├── StudioSampleData.swift       Sample places for studio stages
+├── Theme.swift                  Geometric tokens (radii, spacing)
+├── Info.plist                   App fonts (Dripdrop)
+├── Assets.xcassets/             Logo, icon, shader backgrounds
+├── Fonts/                       Bundled display font
+├── Shaders/StudioShaders.metal  Shader catalog kernels
+├── DS/                          Aurora tokens + font registration
+├── Models/                      Place / Catalog sample models
+└── Components/                  One view file per catalog item
 ```
 
-Add new components as their own `.swift` file under `ComponentsStudio/`, then
-register them in `StudioItem` (inside `ComponentStudioView.swift`).
+Add a new component:
+
+1. Add a `case` to `StudioItem`.
+2. Add its `title` and layout entries.
+3. Register controls + presets in `StudioItemSpecs`.
+4. Wire `specState` in `ComponentStudioStage.body`.
+5. Register the item in `StudioCatalog.categories`.
+6. Set `StudioItem.lastUpdated` (catalog sorts newest first).
+
+---
+
+## Catalog
+
+| Section | Items |
+| --- | --- |
+| Shaders | Interactive Tiles, Dotted Background, Neumorphic Digit, Photo Ripple, Liquid Photo, Refractive Text, Refractive Sphere, Spheric Mesh, Glass Effect |
+| Cards | Satelite Cards |
+| Pills | Glass Pill |
+| Loading | Summary Blur Loading |
+| Scroll | Vertical card deck |
+| Search | AI Search |
 
 ---
 
@@ -47,12 +76,12 @@ register them in `StudioItem` (inside `ComponentStudioView.swift`).
 rules of the road are spelled out in [`GUIDELINES.md`](GUIDELINES.md). The
 recurring SwiftUI patterns and gotchas live in [`SKILLS.md`](SKILLS.md).
 
-System materials and `Color.primary` / `Color.secondary` do all the colour
-work — `Theme` only owns radii and spacing.
+`Theme` owns radii and spacing. Aurora (`DS/Aurora.swift`) owns ink / canvas
+colour and the display font.
 
 ---
 
 ## Recording mode
 
-Triple-tap the stage to hide chrome (nav bar, back chevron, title) for a
-clean screen recording. Triple-tap again to bring it back.
+Triple-tap the stage to hide chrome for a clean screen recording. Triple-tap
+again to bring it back.

@@ -4,12 +4,16 @@
 # Xcode
 build/
 DerivedData/
+.derivedData/
 *.xcuserstate
 xcuserdata/
 *.xcuserdatad/
 
 # XcodeGen output — regenerate locally via `xcodegen generate`
 ComponentsStudio.xcodeproj/
+
+# Local scratch
+.tmp/
 
 # Swift Package Manager
 .build/
