@@ -321,6 +321,11 @@ private struct ComponentStudioStage: View {
             SearchBoxView(text: $searchText, initialFocused: false, motionSpecs: specs)
                 .frame(maxWidth: .infinity)
 
+        case .animatedCreditCard:
+            let specs = AnimatedCreditCardSpecs(specState, sheet: sheet!)
+            AnimatedCreditCardView(specs: specs)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+
         case .blurFocusLoading:
             let specs = SearchModalSpecs(specState, sheet: sheet!)
             SearchModalView(
@@ -434,7 +439,7 @@ private enum StudioCatalog {
             .flame, .flameInGlass, .neumorphicPills, .dottedBackground, .neumorphicDigit, .photoRipple2,
             .photoRipple, .refractiveText, .bubbleTextRipple,
         ]),
-        (id: "cards", title: "Cards", items: [.bubbleCard]),
+        (id: "cards", title: "Cards", items: [.animatedCreditCard, .bubbleCard]),
         (id: "pills", title: "Pills", items: [.sampleGlassPill, .talkPill]),
         (id: "loading", title: "Loading", items: [.blurFocusLoading]),
         (id: "scroll", title: "Scroll", items: [.verticalCardDeck]),
@@ -460,6 +465,7 @@ private enum StudioCatalog {
 
 enum StudioItem: Hashable {
     case searchPillRest
+    case animatedCreditCard
     case blurFocusLoading
     case bubbleCard
     case verticalCardDeck
@@ -480,6 +486,7 @@ enum StudioItem: Hashable {
     /// The catalog sorts items and sections by this date, newest first.
     var lastUpdated: Date {
         switch self {
+        case .animatedCreditCard: return studioCatalogDate(2026, 8, 19, 22, 11)
         case .sdfLiquid: return studioCatalogDate(2026, 6, 28, 17, 0)
         case .flameInGlass: return studioCatalogDate(2026, 6, 28, 22, 15)
         case .flame: return studioCatalogDate(2026, 7, 7, 14, 40)
@@ -512,6 +519,7 @@ enum StudioItem: Hashable {
     var title: String {
         switch self {
         case .searchPillRest: return "AI Search"
+        case .animatedCreditCard: return "AI Credit Card"
         case .blurFocusLoading: return "Summary Blur Loading"
         case .bubbleCard: return "Satelite Cards"
         case .verticalCardDeck: return "Vertical card deck"
@@ -548,6 +556,7 @@ enum StudioItem: Hashable {
     var maxWidth: CGFloat? {
         switch self {
         case .bubbleCard, .verticalCardDeck, .blurFocusLoading,
+             .animatedCreditCard,
              .photoRipple, .photoRipple2, .refractiveText, .bubbleTextRipple, .dottedBackground,
              .neumorphicDigit, .neumorphicPills, .flameInGlass, .flame, .sdfLiquid:
             return .infinity
@@ -559,6 +568,7 @@ enum StudioItem: Hashable {
     var horizontalPadding: CGFloat {
         switch self {
         case .bubbleCard, .verticalCardDeck, .blurFocusLoading,
+             .animatedCreditCard,
              .photoRipple, .photoRipple2, .refractiveText, .bubbleTextRipple, .dottedBackground,
              .neumorphicDigit, .neumorphicPills, .flameInGlass, .flame, .sdfLiquid:
             return 0
