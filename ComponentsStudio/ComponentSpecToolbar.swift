@@ -455,12 +455,17 @@ struct StudioPresetControlBar: View {
                 if categories.count > 1 {
                     categorySwitcher
                 }
-                VStack(spacing: 10) {
-                    ForEach(activeCategory.controls) { control in
-                        controlView(control)
+                ScrollView {
+                    VStack(spacing: 10) {
+                        ForEach(activeCategory.controls) { control in
+                            controlView(control)
+                        }
                     }
+                    .padding(12)
                 }
-                .padding(12)
+                .frame(maxHeight: 280)
+                .scrollBounceBehavior(.basedOnSize)
+                .scrollIndicators(.hidden)
                 .background {
                     RoundedRectangle(cornerRadius: innerCornerRadius, style: .continuous)
                         .fill(.ultraThinMaterial)
@@ -471,18 +476,28 @@ struct StudioPresetControlBar: View {
         .padding(.horizontal, 4)
     }
 
+    @ViewBuilder
     private var categorySwitcher: some View {
-        HStack(spacing: 4) {
+        let many = categories.count > 4
+        let chips = HStack(spacing: 4) {
             ForEach(categories) { category in
-                categoryChip(category)
+                categoryChip(category, expands: !many)
             }
         }
         .padding(3)
+
+        Group {
+            if many {
+                ScrollView(.horizontal, showsIndicators: false) { chips }
+            } else {
+                chips
+            }
+        }
         .background(Capsule().fill(inkSoft))
     }
 
     @ViewBuilder
-    private func categoryChip(_ category: ComponentSpecCategory) -> some View {
+    private func categoryChip(_ category: ComponentSpecCategory, expands: Bool) -> some View {
         let isOn = category.id == categoryID
         Button {
             withAnimation(presetSwitchAnim) {
@@ -495,9 +510,10 @@ struct StudioPresetControlBar: View {
                 .foregroundStyle(isOn ? Aurora.ink : Aurora.ink.opacity(0.55))
                 .lineLimit(1)
                 .truncationMode(.tail)
-                .padding(.horizontal, 14)
+                .padding(.horizontal, expands ? 14 : 12)
                 .padding(.vertical, 6)
-                .frame(maxWidth: .infinity)
+                .frame(maxWidth: expands ? .infinity : nil)
+                .fixedSize(horizontal: !expands, vertical: false)
                 .background {
                     if isOn {
                         SpecToolboxPillBg()
@@ -759,7 +775,7 @@ struct UnifiedStudioStage<Content: View>: View {
 
     private var specsPanelBottomInset: CGFloat {
         if showCode { return 420 }
-        if controlBarExpanded { return 340 }
+        if controlBarExpanded { return 400 }
         return 80
     }
 
