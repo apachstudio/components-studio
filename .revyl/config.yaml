@@ -8,6 +8,10 @@ build:
         development:
             ios:
                 app_id: 40687413-82fa-413a-90b5-63fdb92ebd59
+                image: ios-macos-26-xcode-26.5
+                setup_commands:
+                    - brew list xcodegen >/dev/null 2>&1 || brew install xcodegen
+                    - xcodegen generate
                 build_commands:
-                    - xcodebuild -project ComponentsStudio.xcodeproj -scheme 'ComponentsStudio' -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath build
+                    - xcodebuild -project ComponentsStudio.xcodeproj -scheme 'ComponentsStudio' -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath build ARCHS=arm64
                 output_path: build/Build/Products/Debug-iphonesimulator/*.app
