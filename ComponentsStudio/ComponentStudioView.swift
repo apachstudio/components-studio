@@ -486,7 +486,7 @@ enum StudioItem: Hashable {
     /// The catalog sorts items and sections by this date, newest first.
     var lastUpdated: Date {
         switch self {
-        case .animatedCreditCard: return studioCatalogDate(2026, 8, 19, 22, 11)
+        case .animatedCreditCard: return studioCatalogDate(2026, 9, 14, 17, 30)
         case .sdfLiquid: return studioCatalogDate(2026, 6, 28, 17, 0)
         case .flameInGlass: return studioCatalogDate(2026, 6, 28, 22, 15)
         case .flame: return studioCatalogDate(2026, 7, 7, 14, 40)
@@ -519,7 +519,7 @@ enum StudioItem: Hashable {
     var title: String {
         switch self {
         case .searchPillRest: return "AI Search"
-        case .animatedCreditCard: return "AI Credit Card"
+        case .animatedCreditCard: return "Flex Cards"
         case .blurFocusLoading: return "Summary Blur Loading"
         case .bubbleCard: return "Satelite Cards"
         case .verticalCardDeck: return "Vertical card deck"
